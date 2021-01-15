@@ -1,0 +1,41 @@
+{
+    "name": "@usedb/core",
+    "version": "0.0.1",
+    "description": "Official library for @usedb",
+    "author": "GeekyAnts",
+    "repository": {
+      "type": "git",
+      "url": "git+https://github.com/mono/mono.git",
+      "directory": "packages/core"
+    },
+    "scripts": {
+      "start": "tsdx watch --tsconfig tsconfig.build.json --verbose --noClean",
+      "build": "tsdx build --tsconfig tsconfig.build.json",
+      "test": "tsdx test",
+      "lint": "tsdx lint",
+      "prepublish": "npm run build"
+    },
+    "main": "dist/index.js",
+    "module": "dist/react.esm.js",
+    "typings": "dist/index.d.ts",
+    "files": [
+      "README.md",
+      "dist"
+    ],
+    "peerDependencies": {},
+    "dependencies": {
+      "lodash": "^4.17.20",
+      "mobx": "^6.0.4",
+      "mobx-react-lite": "^3.1.6",
+      "mobx-state-tree": "^5.0.0",
+      "mobx-state-tree-normalizr": "^1.0.10",
+      "tslib": "^2.0.0"
+    },
+    "devDependencies": {
+      "@types/lodash": "^4.14.167"
+    },
+    "publishConfig": {
+      "access": "public"
+    }
+  }
+  
