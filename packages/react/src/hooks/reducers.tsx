@@ -4,11 +4,11 @@ export type IQueryState = {
   error: Error | any;
 };
 
-export type IActionTypes = 'ERROR' | 'SUCCESS' | 'LOADING';
-export type IStatus = 'loading' | 'error' | 'success' | 'idle';
+export type IActionTypes = 'ERROR' | 'SUCCESS' | 'LOADING' | 'REVALIDATING';
+export type IStatus = 'loading' | 'error' | 'success' | 'idle' | 'revalidating';
 export type IAction = {
   type: IActionTypes;
-  payload: any;
+  payload?: any;
 };
 
 export const fetchReducer = (
@@ -22,6 +22,8 @@ export const fetchReducer = (
       return { ...state, status: 'loading', error: undefined };
     case 'SUCCESS':
       return { ...state, status: 'success', data: action.payload };
+    case 'REVALIDATING':
+      return { ...state, status: 'revalidating' };
     default:
       return state;
   }

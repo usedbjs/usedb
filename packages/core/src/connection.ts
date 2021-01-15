@@ -34,6 +34,7 @@ export class Connection {
       this.bind
         .perform(query)
         .then(resp => {
+          // Put getter queries into cache, setter should be simply resolved for now
           if (GETTER_QUERIES.includes(query.operation)) {
             this.cache.put(query, resp);
             resolve(this.cache.get(query));

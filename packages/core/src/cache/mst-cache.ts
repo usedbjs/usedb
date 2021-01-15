@@ -2,6 +2,7 @@ import { IAnyModelType, IAnyType, IMapType, types } from 'mobx-state-tree';
 import normalize from 'mobx-state-tree-normalizr';
 import { Cache } from './index';
 import { QueryData } from '../query';
+import { exerimentalMSTViews } from './experimental-mst-views';
 
 const QUERY_CACHE_NAME = 'queryCache';
 const DB_NAME = 'MSTCache';
@@ -20,6 +21,7 @@ type IModelMaps = {
 };
 
 let modelKeyValue: IModelKeyValue = {};
+
 const createDB = ({ models, initialValue }: ICreateDBParams) => {
   let queryCache: Array<IAnyType> = [];
   let modelMaps: IModelMaps = {};
@@ -33,54 +35,57 @@ const createDB = ({ models, initialValue }: ICreateDBParams) => {
 
   modelMaps[QUERY_CACHE_NAME] = types.map(types.union(...queryCache));
 
-  const DBModel = types.model(DB_NAME, modelMaps).actions(self => {
-    return {
-      has(query: QueryData) {
-        return self[QUERY_CACHE_NAME].has(query.getHash());
-      },
-      get(query: QueryData) {
-        return self[QUERY_CACHE_NAME].get(query.getHash());
-      },
-      put(query: QueryData, data: any) {
-        const model = modelKeyValue[query.collection];
-        console.log('Putting into MST cache ', query);
+  const DBModel = types
+    .model(DB_NAME, modelMaps)
+    .actions(self => {
+      return {
+        has(query: QueryData) {
+          return self[QUERY_CACHE_NAME].has(query.getHash());
+        },
+        get(query: QueryData) {
+          return self[QUERY_CACHE_NAME].get(query.getHash());
+        },
+        put(query: QueryData, data: any) {
+          const model = modelKeyValue[query.collection];
+          console.log('Putting into MST cache ', query);
 
-        //@ts-ignore
-        const normalizedResponse = self._populate({ data, model });
+          //@ts-ignore
+          const normalizedResponse = self._populate({ data, model });
 
-        self[QUERY_CACHE_NAME].set(query.getHash(), normalizedResponse);
-      },
-      _save(name: string, data: any) {
-        const prevData = self[name].get(data.id);
-        if (prevData) {
-          self[name].set(data.id, { ...prevData, ...data });
-        } else {
-          self[name].set(data.id, data);
-        }
-      },
-      _populate({ data, model }: { data: any; model: any }) {
-        const { entities, result } = normalizeResponse(data, model);
-        for (let key in entities) {
-          const modelData = entities[key];
-          for (let id in modelData) {
-            //@ts-ignore
-            self._save(key, modelData[id]);
+          self[QUERY_CACHE_NAME].set(query.getHash(), normalizedResponse);
+        },
+        _save(name: string, data: any) {
+          const prevData = self[name].get(data.id);
+          if (prevData) {
+            self[name].set(data.id, { ...prevData, ...data });
+          } else {
+            self[name].set(data.id, data);
           }
-        }
+        },
+        _populate({ data, model }: { data: any; model: any }) {
+          const { entities, result } = normalizeResponse(data, model);
+          for (let key in entities) {
+            const modelData = entities[key];
+            for (let id in modelData) {
+              //@ts-ignore
+              self._save(key, modelData[id]);
+            }
+          }
 
-        let normalizedResponse: any;
-        if (Array.isArray(result)) {
-          normalizedResponse = result.map((id: any) => {
-            return self[model.name].get(id);
-          });
-        } else {
-          normalizedResponse = self[model.name].get(result);
-        }
+          let normalizedResponse: any;
+          if (Array.isArray(result)) {
+            normalizedResponse = result.map((id: any) => {
+              return self[model.name].get(id);
+            });
+          } else {
+            normalizedResponse = self[model.name].get(result);
+          }
 
-        return normalizedResponse;
-      },
-    };
-  });
+          return normalizedResponse;
+        },
+      };
+    })
+    .views(exerimentalMSTViews);
 
   const db = DBModel.create(initialValue);
   return db;

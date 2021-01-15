@@ -1,6 +1,8 @@
 import { filter, findIndex, isEmpty } from 'lodash';
 import { QueryData, Binding } from '../../src/index';
 
+const artificialDelay = (fn: any) => setTimeout(fn, 1000);
+
 export default class RuntimeBinding implements Binding {
   db: any = {};
   getAllCollections(): Promise<any> {
@@ -20,18 +22,21 @@ export default class RuntimeBinding implements Binding {
     // @ts-ignore
     window['db'] = this.db;
     return new Promise((resolve, reject) => {
-      try {
-        if (!query.operation) {
-          reject('Invalid query');
+      artificialDelay(() => {
+        try {
+          if (!query.operation) {
+            reject('Invalid query');
+          }
+          let queryResponse = this.processQuery(query);
+
+          if (queryResponse.error) {
+            reject(queryResponse.error);
+          }
+          resolve(queryResponse.data);
+        } catch (err) {
+          reject(err);
         }
-        let queryResponse = this.processQuery(query);
-        if (queryResponse.error) {
-          reject(queryResponse.error);
-        }
-        resolve(queryResponse.data);
-      } catch (err) {
-        reject(err);
-      }
+      });
     });
   }
   private processQuery(query: QueryData): { data: any; error?: any } {
@@ -39,8 +44,9 @@ export default class RuntimeBinding implements Binding {
     let returnValue: any;
     switch (operation) {
       case 'create':
-        this.db[collection].push(payload.data);
-        returnValue = { id: Math.random().toString(), ...payload.data };
+        const data = { id: Math.random().toString(), ...payload.data };
+        this.db[collection].push(data);
+        returnValue = data;
         break;
       case 'update':
         if (payload.hasOwnProperty('where')) {

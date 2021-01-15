@@ -13,10 +13,24 @@ export const refetchCallbacks = {
     return Array.from(refetchMap.values());
   },
   filter(fn: any) {
-    return this.getAll().filter(fn);
+    return refetchCallbacks.getAll().filter(fn);
   },
   delete(key: string, fn: any) {
     const newArr = this.get(key).filter((f: any) => f !== fn);
-    this.set(key, newArr);
+    refetchMap.set(key, newArr);
   },
 };
+
+// Revalidates all the Post.find, Post.findMany queries
+// refetch();
+// ToDo
+// refetch(db.Post.findMany);
+// refetch(db.Post);
+// refetch(db.Post.findOne({where: {id:2}}));
+// refetch(db.Post.findOne);
+const refetchQueries = (collectionName: string) => {
+  const callbacks = refetchCallbacks.get(collectionName);
+  callbacks.forEach((callback: any) => callback());
+};
+
+export { refetchQueries };
