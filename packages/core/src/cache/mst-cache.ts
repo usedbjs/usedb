@@ -1,8 +1,16 @@
-import { IAnyModelType, IAnyType, IMapType, types } from 'mobx-state-tree';
+import {
+  applyPatch,
+  IAnyModelType,
+  IAnyType,
+  IMapType,
+  onPatch,
+  types,
+} from 'mobx-state-tree';
 import normalize from 'mobx-state-tree-normalizr';
 import { Cache } from './index';
 import { QueryData } from '../query';
 import { exerimentalMSTViews } from './experimental-mst-views';
+import { GETTER_QUERIES } from '../query/index';
 
 const QUERY_CACHE_NAME = 'queryCache';
 const DB_NAME = 'MSTCache';
@@ -47,12 +55,18 @@ const createDB = ({ models, initialValue }: ICreateDBParams) => {
         },
         put(query: QueryData, data: any) {
           const model = modelKeyValue[query.collection];
-          console.log('Putting into MST cache ', query);
 
           //@ts-ignore
           const normalizedResponse = self._populate({ data, model });
 
-          self[QUERY_CACHE_NAME].set(query.getHash(), normalizedResponse);
+          // Getter queries add to the cache
+          if (GETTER_QUERIES.includes(query.operation)) {
+            self[QUERY_CACHE_NAME].set(query.getHash(), normalizedResponse);
+          } else if (query.operation.includes('update')) {
+            const collection = query.collection;
+            //@ts-ignore
+            self._save(collection, data);
+          }
         },
         _save(name: string, data: any) {
           const prevData = self[name].get(data.id);
@@ -82,6 +96,28 @@ const createDB = ({ models, initialValue }: ICreateDBParams) => {
           }
 
           return normalizedResponse;
+        },
+        _optimisticUpdate(name: string, payload: any) {
+          let reverse = { reversePatch: {} };
+
+          const removeListener = onPatch(
+            self[name].get(payload.where.id),
+            (_patch, reversePatch) => {
+              reverse.reversePatch = reversePatch;
+            }
+          );
+
+          //@ts-ignore
+          self._save(name, { id: payload.where.id, ...payload.data });
+
+          removeListener();
+          return function revert() {
+            applyPatch(
+              self[name].get(payload.where.id),
+              //@ts-ignore
+              reverse.reversePatch
+            );
+          };
         },
       };
     })

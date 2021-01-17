@@ -40,7 +40,7 @@ export class Connection {
             resolve(this.cache.get(query));
           } else {
             this.cache.put(query, resp);
-            resolve(this.cache.get(query));
+            resolve(resp);
           }
         })
         .catch(error => {

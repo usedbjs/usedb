@@ -3,8 +3,26 @@ import { QueryData, Binding } from '../../src/index';
 
 const artificialDelay = (fn: any) => setTimeout(fn, 1000);
 
+const randomPosts = [
+  { id: '1', title: 'post1' },
+  { id: '2', title: 'post2' },
+  { id: '3', title: 'post3' },
+  { id: '4', title: 'post4' },
+  { id: '5', title: 'post5' },
+  { id: '6', title: 'post2' },
+  { id: '7', title: 'kwd' },
+  { id: '8', title: '1jdn' },
+  { id: '9', title: 'dkdk' },
+  { id: '10', title: 'djtr' },
+  { id: '11', title: 'fijf' },
+  { id: '12', title: 'djr' },
+  { id: '13', title: 'fmijr' },
+  { id: '14', title: 'fnif' },
+  { id: '15', title: 'fnir' },
+];
+
 export default class RuntimeBinding implements Binding {
-  db: any = {};
+  db: any = { Post: randomPosts };
   getAllCollections(): Promise<any> {
     return new Promise(async (resolve, reject) => {
       try {
@@ -55,6 +73,7 @@ export default class RuntimeBinding implements Binding {
             for (let childData in payload.data) {
               this.db[collection][index][childData] = payload.data[childData];
             }
+            returnValue = this.db[collection][index];
           }
         }
         break;
