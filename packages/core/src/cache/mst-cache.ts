@@ -133,6 +133,19 @@ const createDB = ({ models, initialValue }: ICreateDBParams) => {
             recorder.undo();
           };
         },
+        create(name: string, payload: any) {
+          const recorder = recordPatches(self);
+          //@ts-ignore
+          const model = modelKeyValue[name];
+          self._populate({
+            data: payload.data,
+            model,
+          });
+          recorder.stop();
+          return function undo() {
+            recorder.undo();
+          };
+        },
         delete(name: string, payload: any) {
           const recorder = recordPatches(self);
           //@ts-ignore

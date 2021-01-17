@@ -1,8 +1,9 @@
 import * as React from 'react';
 import { db } from '@usedb/core';
-import { refetchQueries, useDB } from '@usedb/react';
+import { refetchQueries, useDB, UseDBReactContext } from '@usedb/react';
 import { observer } from 'mobx-react-lite';
 import { useEffect } from 'react';
+import { useContext } from 'react';
 
 export const Test = function Test() {
   const { setQuery, status } = useDB();
@@ -20,6 +21,7 @@ export const Test = function Test() {
 
   useEffect(() => {
     if (status === 'success') {
+      // Refetch
       refetchQueries(db.Post.findMany({}));
     }
   }, [status]);

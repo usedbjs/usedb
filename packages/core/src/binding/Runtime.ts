@@ -4,7 +4,7 @@ import { QueryData, Binding } from '../../src/index';
 const artificialDelay = (fn: any) => setTimeout(fn, 1000);
 
 const randomPosts = [
-  { id: '1', title: 'post1' },
+  { id: '1', title: 'post1', author: '2' },
   { id: '2', title: 'post2' },
   { id: '3', title: 'post3' },
   { id: '4', title: 'post4' },
