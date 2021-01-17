@@ -85,17 +85,21 @@ const createDB = ({ models, initialValue }: ICreateDBParams) => {
           console.log('snapshot ', getSnapshot(self));
         },
         _save(name: string, data: any) {
-          const prevData = self[name].get(data.id);
+          const model = modelKeyValue[name];
+          const identifierAttribute = model.identifierAttribute;
+
+          const prevData = self[name].get(data[identifierAttribute]);
           if (prevData) {
-            self[name].set(data.id, { ...prevData, ...data });
+            self[name].set(data[identifierAttribute], { ...prevData, ...data });
           } else {
-            self[name].set(data.id, data);
+            self[name].set(data[identifierAttribute], data);
           }
         },
         _populate({ data, model }: { data: any; model: any }) {
           const { entities, result } = normalizeResponse(data, model);
           for (let key in entities) {
             const modelData = entities[key];
+
             for (let id in modelData) {
               //@ts-ignore
               self._save(key, modelData[id]);

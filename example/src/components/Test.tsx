@@ -10,7 +10,10 @@ export const Test = function Test() {
   const handleSubmit = () => {
     setQuery(
       db.Post.create({
-        data: { title: 'this is a post', author: { id: '2', name: 'nishan' } },
+        data: {
+          title: 'this is a post',
+          author: { authorId: '2', name: 'nishan' },
+        },
       })
     );
   };

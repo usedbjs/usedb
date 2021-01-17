@@ -2,7 +2,7 @@ import { types, createDB } from '@usedb/core';
 const POST_COLLECTION_NAME = 'Post';
 
 const Author = types.model('Author', {
-  id: types.identifier,
+  authorId: types.identifier,
   name: types.string,
 });
 
