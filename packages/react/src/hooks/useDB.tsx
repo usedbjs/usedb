@@ -22,7 +22,9 @@ export function useDB(queryData: QueryData) {
   });
 
   useEffect(() => {
-    revalidate();
+    if (queryData) {
+      revalidate();
+    }
   }, [queryData && queryData.getHash()]);
 
   // Used for getter queries
