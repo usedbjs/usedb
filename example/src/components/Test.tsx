@@ -1,48 +1,38 @@
 import * as React from 'react';
 import { db } from '@usedb/core';
-import { useDBMutation, useDBQuery, refetchQueries } from '@usedb/react';
-import { useState } from 'react';
+import { refetchQueries, useDB } from '@usedb/react';
 import { observer } from 'mobx-react-lite';
-import { cacheDB } from '../../dbConfig';
+import { useEffect } from 'react';
 
 export const Test = function Test() {
-  const { mutate, status, data } = useDBMutation();
-  const [showPostList, setShowPostList] = useState(false);
+  const { setQuery, status } = useDB();
 
-  const handleSubmit = async () => {
-    try {
-      await mutate(
-        db.Post.create({
-          data: { title: 'this is a post' },
-        })
-      );
+  const handleSubmit = () => {
+    setQuery(
+      db.Post.create({
+        data: { title: 'this is a post' },
+      })
+    );
+  };
 
+  useEffect(() => {
+    if (status === 'success') {
       refetchQueries(db.Post.collection);
-    } catch (e) {
-      // Do something
     }
-  };
-
-  const mountAnotherPostList = () => {
-    setShowPostList(true);
-  };
+  }, [status]);
 
   return (
     <div>
       <button disabled={status === 'loading'} onClick={handleSubmit}>
         {status === 'loading' ? 'Creating' : 'Create a Post'}
       </button>
-      <h2>Plain old post list</h2>
       <PostList />
-      {/* <button onClick={mountAnotherPostList}>Mount another post list</button> */}
-      <h4>Reactive Post list</h4>
-      <PostListReactive />
     </div>
   );
 };
 
 const PostList = () => {
-  const { data, status, error } = useDBQuery(
+  const { data, status, error } = useDB(
     db.Post.findMany({ where: { title: 'this is a post' } })
   );
 
@@ -55,26 +45,52 @@ const PostList = () => {
   }
 
   if (data) {
-    return data.map(item => {
-      return <div key={item.id}>{item.title}</div>;
-    });
+    return (
+      <div>
+        {data.map(item => {
+          return (
+            <div key={item.id}>
+              <PostItem post={item} />
+            </div>
+          );
+        })}
+      </div>
+    );
   }
 
   return null;
 };
 
-const PostListReactive = observer(() => {
-  const data = cacheDB.findMany('Post', { where: { title: 'this is a post' } });
+const PostItem = observer(({ post }: any) => {
+  const { setQuery, status } = useDB();
 
-  if (data) {
-    return data.map(item => {
-      return <div key={item.id}>{item.title}</div>;
-    });
-  } else {
-    return <div>Not found</div>;
-  }
+  return (
+    <div>
+      {post.title}
+      <button
+        onClick={() =>
+          setQuery(
+            db.Post.update({
+              where: { id: post.id },
+              data: { title: 'new post' },
+            }),
+            { optimistic: true }
+          )
+        }
+        disabled={status === 'loading'}
+      >
+        update title
+      </button>
+    </div>
+  );
 });
 
 // Change useDBQuery, useDBMutation -> useDB
 // mutate API refactor, pass db.Post.create({ data: { id: '1', title: 'this is a post' } }) in mutate function
 // Replace refetch to fetch and add filter function
+
+// Current implementation
+// 1. On Create - Refetch all
+// 2. On Update - Update single entity on success/optimistic
+// 3. On Delete - Refetch all
+// 4. On Read - Cache first
