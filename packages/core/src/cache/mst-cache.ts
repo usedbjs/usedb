@@ -1,16 +1,38 @@
+//@ts-nocheck
 import {
-  applyPatch,
   IAnyModelType,
-  IAnyType,
   IMapType,
-  onPatch,
   types,
+  recordPatches,
+  getSnapshot,
+  destroy,
+  getRoot,
 } from 'mobx-state-tree';
 import normalize from 'mobx-state-tree-normalizr';
 import { Cache } from './index';
 import { QueryData } from '../query';
 import { exerimentalMSTViews } from './experimental-mst-views';
-import { GETTER_QUERIES } from '../query/index';
+
+const RuntimeReference = types.model('RuntimeReference', {
+  __type: types.string,
+  id: types.string,
+});
+
+const RuntimeReferenceResolver = types.safeReference(RuntimeReference, {
+  set: (value, parent: any) => {
+    return value.__type + '_' + value.id;
+  },
+  get(identifier /* string */, parent: any /*Store*/) {
+    const rootStore = getRoot(parent);
+    const [type, id] = identifier.split('_');
+    return rootStore[type].get(id) || null;
+  },
+});
+
+const QueryCacheType = types.union(
+  RuntimeReferenceResolver,
+  types.array(RuntimeReferenceResolver)
+);
 
 const QUERY_CACHE_NAME = 'queryCache';
 const DB_NAME = 'MSTCache';
@@ -31,42 +53,36 @@ type IModelMaps = {
 let modelKeyValue: IModelKeyValue = {};
 
 const createDB = ({ models, initialValue }: ICreateDBParams) => {
-  let queryCache: Array<IAnyType> = [];
   let modelMaps: IModelMaps = {};
 
   models.forEach(model => {
     modelKeyValue[model.name] = model;
     modelMaps[model.name] = types.map(model);
-    queryCache.push(types.safeReference(model));
-    queryCache.push(types.array(types.safeReference(model)));
   });
 
-  modelMaps[QUERY_CACHE_NAME] = types.map(types.union(...queryCache));
-
   const DBModel = types
-    .model(DB_NAME, modelMaps)
+    .model(DB_NAME, {
+      ...modelMaps,
+      [QUERY_CACHE_NAME]: types.optional(types.map(QueryCacheType), {}),
+    })
     .actions(self => {
       return {
         has(query: QueryData) {
-          return self[QUERY_CACHE_NAME].has(query.getHash());
+          return self[QUERY_CACHE_NAME].has(query.queryKey);
         },
         get(query: QueryData) {
-          return self[QUERY_CACHE_NAME].get(query.getHash());
+          return self[QUERY_CACHE_NAME].get(query.queryKey);
         },
         put(query: QueryData, data: any) {
           const model = modelKeyValue[query.collection];
 
-          //@ts-ignore
           const normalizedResponse = self._populate({ data, model });
 
           // Getter queries add to the cache
-          if (GETTER_QUERIES.includes(query.operation)) {
-            self[QUERY_CACHE_NAME].set(query.getHash(), normalizedResponse);
-          } else if (query.operation.includes('update')) {
-            const collection = query.collection;
-            //@ts-ignore
-            self._save(collection, data);
+          if (query.fetchPolicy === 'cache-and-network') {
+            self[QUERY_CACHE_NAME].set(query.queryKey, normalizedResponse);
           }
+          console.log('snapshot ', getSnapshot(self));
         },
         _save(name: string, data: any) {
           const prevData = self[name].get(data.id);
@@ -89,34 +105,38 @@ const createDB = ({ models, initialValue }: ICreateDBParams) => {
           let normalizedResponse: any;
           if (Array.isArray(result)) {
             normalizedResponse = result.map((id: any) => {
-              return self[model.name].get(id);
+              return RuntimeReference.create({ id, __type: model.name });
             });
           } else {
-            normalizedResponse = self[model.name].get(result);
+            normalizedResponse = RuntimeReference.create({
+              id: result,
+              __type: model.name,
+            });
           }
 
           return normalizedResponse;
         },
-        _optimisticUpdate(name: string, payload: any) {
-          let reverse = { reversePatch: {} };
-
-          const removeListener = onPatch(
-            self[name].get(payload.where.id),
-            (_patch, reversePatch) => {
-              reverse.reversePatch = reversePatch;
-            }
-          );
-
+        update(name: string, payload: any) {
+          const recorder = recordPatches(self);
           //@ts-ignore
-          self._save(name, { id: payload.where.id, ...payload.data });
-
-          removeListener();
-          return function revert() {
-            applyPatch(
-              self[name].get(payload.where.id),
-              //@ts-ignore
-              reverse.reversePatch
-            );
+          const model = modelKeyValue[name];
+          self._populate({
+            data: { id: payload.where.id, ...payload.data },
+            model,
+          });
+          recorder.stop();
+          return function undo() {
+            recorder.undo();
+          };
+        },
+        delete(name: string, payload: any) {
+          const recorder = recordPatches(self);
+          //@ts-ignore
+          const model = modelKeyValue[name];
+          destroy(self[name].get(payload.where.id));
+          recorder.stop();
+          return function undo() {
+            recorder.undo();
           };
         },
       };

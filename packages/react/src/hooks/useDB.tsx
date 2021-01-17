@@ -1,7 +1,7 @@
 import { QueryData, Connection } from '@usedb/core';
 import { refetchCallbacks } from '../utils';
 import { UseDBReactContext } from '../context';
-import { useCallback, useContext, useEffect, useReducer } from 'react';
+import { useCallback, useContext, useEffect, useReducer, useRef } from 'react';
 import { fetchReducer } from './reducers';
 
 type ISetQueryConfig = {
@@ -14,6 +14,7 @@ export function useDB(queryData: QueryData) {
   }: {
     connection: Connection;
   } = useContext(UseDBReactContext);
+  const mounted = useRef(false);
 
   const [state, dispatch] = useReducer(fetchReducer, {
     status: 'idle',
@@ -21,53 +22,69 @@ export function useDB(queryData: QueryData) {
     error: undefined,
   });
 
+  const dispatchOnMounted = (...args: any) => {
+    if (mounted.current) {
+      dispatch(args[0]);
+    }
+  };
+
   useEffect(() => {
     if (queryData) {
       revalidate();
     }
-  }, [queryData && queryData.getHash()]);
+  }, [queryData && queryData.queryKey]);
 
   // Used for getter queries
   const revalidate = useCallback(() => {
     state.data
-      ? dispatch({ type: 'REVALIDATING' })
-      : dispatch({ type: 'LOADING' });
+      ? dispatchOnMounted({ type: 'REVALIDATING' })
+      : dispatchOnMounted({ type: 'LOADING' });
     connection
       .query(queryData, true)
-      .then(data => dispatch({ type: 'SUCCESS', payload: data }))
-      .catch(error => dispatch({ type: 'ERROR', payload: error }));
+      .then(data => dispatchOnMounted({ type: 'SUCCESS', payload: data }))
+      .catch(error => dispatchOnMounted({ type: 'ERROR', payload: error }));
   }, [state.data]);
 
   // Used for mutation queries
   const setQuery = (query: QueryData, config?: ISetQueryConfig) => {
-    let reversePatch = () => {};
+    let undoOptimisticUpdate = () => {};
     if (config?.optimistic) {
       //@ts-ignore
-      reversePatch = connection.cache._optimisticUpdate(
+      undoOptimisticUpdate = connection.cache[query.operation](
         query.collection,
         query.payload
       );
     }
 
-    dispatch({ type: 'LOADING' });
+    dispatchOnMounted({ type: 'LOADING' });
     connection
       .query(query)
-      .then(data => dispatch({ type: 'SUCCESS', payload: data }))
+      .then(data => {
+        dispatchOnMounted({ type: 'SUCCESS', payload: data });
+      })
       .catch(error => {
-        dispatch({ type: 'ERROR', payload: error });
-        reversePatch();
+        dispatchOnMounted({ type: 'ERROR', payload: error });
+        undoOptimisticUpdate();
       });
   };
 
   useEffect(() => {
     if (queryData) {
-      refetchCallbacks.set(queryData.collection, revalidate);
-      return () => {
-        refetchCallbacks.delete(queryData.collection, revalidate);
-      };
+      refetchCallbacks.set(queryData, revalidate);
     }
-    return;
-  }, [queryData, revalidate]);
+    return () => {
+      if (queryData) {
+        refetchCallbacks.delete(queryData, revalidate);
+      }
+    };
+  }, [revalidate]);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   return { setQuery, ...state };
 }

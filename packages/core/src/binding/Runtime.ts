@@ -96,6 +96,8 @@ export default class RuntimeBinding implements Binding {
           if (returnValue.length === 0) {
             throw new Error('404 Not found');
           }
+        } else {
+          returnValue = this.db[collection];
         }
 
         if (payload.hasOwnProperty('select')) {

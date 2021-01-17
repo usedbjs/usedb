@@ -1,4 +1,4 @@
-import { useEffect, useContext, useReducer, useMemo, useCallback } from 'react';
+import { useEffect, useContext, useReducer, useCallback } from 'react';
 import { Connection, QueryData } from '@usedb/core';
 import { UseDBReactContext } from '../context';
 import { refetchCallbacks } from '../utils';
@@ -10,10 +10,6 @@ export function useDBQuery(queryData: QueryData) {
   }: {
     connection: Connection;
   } = useContext(UseDBReactContext);
-
-  const queryHash = useMemo(() => {
-    return queryData.getHash();
-  }, [queryData]);
 
   const [state, dispatch] = useReducer(fetchReducer, {
     status: 'idle',
@@ -39,16 +35,16 @@ export function useDBQuery(queryData: QueryData) {
       .query(queryData, true)
       .then(data => dispatch({ type: 'SUCCESS', payload: data }))
       .catch(error => dispatch({ type: 'ERROR', payload: error }));
-  }, [state.data, queryHash]);
+  }, [state.data, queryData.queryKey]);
 
   useEffect(() => {
     fetchQuery();
-  }, [queryHash]);
+  }, [queryData.queryKey]);
 
   useEffect(() => {
-    refetchCallbacks.set(queryData.collection, refetchCallback);
+    refetchCallbacks.set(queryData, refetchCallback);
     return () => {
-      refetchCallbacks.delete(queryData.collection, refetchCallback);
+      refetchCallbacks.delete(queryData, refetchCallback);
     };
   }, [refetchCallback]);
 

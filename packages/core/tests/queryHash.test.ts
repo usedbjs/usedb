@@ -10,6 +10,6 @@ describe('query hash function', () => {
       where: { title: 'Post Title', id: '2' },
     });
 
-    expect(query1.getHash()).toEqual(query2.getHash());
+    expect(query1.queryKey).toEqual(query2.queryKey);
   });
 });

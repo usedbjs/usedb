@@ -10,14 +10,14 @@ export const Test = function Test() {
   const handleSubmit = () => {
     setQuery(
       db.Post.create({
-        data: { title: 'this is a post' },
+        data: { title: 'this is a post', author: { id: '2', name: 'nishan' } },
       })
     );
   };
 
   useEffect(() => {
     if (status === 'success') {
-      refetchQueries(db.Post.collection);
+      refetchQueries(db.Post.findMany({}));
     }
   }, [status]);
 
@@ -31,10 +31,8 @@ export const Test = function Test() {
   );
 };
 
-const PostList = () => {
-  const { data, status, error } = useDB(
-    db.Post.findMany({ where: { title: 'this is a post' } })
-  );
+const PostList = observer(() => {
+  const { data, status, error } = useDB(db.Post.findMany({}));
 
   if (status === 'loading') {
     return <div>Loading posts...</div>;
@@ -59,14 +57,21 @@ const PostList = () => {
   }
 
   return null;
-};
+});
 
 const PostItem = observer(({ post }: any) => {
   const { setQuery, status } = useDB();
 
+  useEffect(() => {
+    if (status === 'success') {
+      refetchQueries(db.Post.collection);
+    }
+  }, [status]);
+
   return (
     <div>
       {post.title}
+      {post.author?.name}
       <button
         onClick={() =>
           setQuery(
@@ -80,6 +85,20 @@ const PostItem = observer(({ post }: any) => {
         disabled={status === 'loading'}
       >
         update title
+      </button>
+
+      <button
+        onClick={() =>
+          setQuery(
+            db.Post.delete({
+              where: { id: post.id },
+            }),
+            { optimistic: true }
+          )
+        }
+        disabled={status === 'loading'}
+      >
+        delete
       </button>
     </div>
   );

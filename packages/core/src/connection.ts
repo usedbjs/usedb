@@ -1,4 +1,4 @@
-import { QueryData, GETTER_QUERIES } from './query';
+import { QueryData } from './query';
 import { Binding } from './binding';
 import { Cache } from './cache';
 import { isNil } from 'lodash';
@@ -20,26 +20,28 @@ export class Connection {
   query(query: QueryData, disableCache?: boolean): Promise<any> {
     if (
       !disableCache &&
-      GETTER_QUERIES.includes(query.operation) &&
+      query.fetchPolicy === 'cache-and-network' &&
       this.cache.has(query)
     ) {
       let cachedValue = this.cache.get(query);
       if (!isNil(cachedValue)) {
         return new Promise((resolve: any, _reject: any) => {
           resolve(cachedValue);
+          this.bind.perform(query).then(resp => {
+            this.cache.put(query, resp);
+          });
         });
       }
     }
+
     return new Promise((resolve: any, reject: any) => {
       this.bind
         .perform(query)
         .then(resp => {
-          // Put getter queries into cache, setter should be simply resolved for now
-          if (GETTER_QUERIES.includes(query.operation)) {
+          if (query.fetchPolicy === 'cache-and-network') {
             this.cache.put(query, resp);
             resolve(this.cache.get(query));
           } else {
-            this.cache.put(query, resp);
             resolve(resp);
           }
         })

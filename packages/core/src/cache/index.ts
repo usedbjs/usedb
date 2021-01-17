@@ -5,16 +5,16 @@ export class Cache {
     this.data = new Map();
   }
   has(query: QueryData) {
-    return this.data.get(query.getHash()) ? true : false;
+    return this.data.get(query.queryKey) ? true : false;
   }
   get(query: QueryData) {
-    return this.data.get(query.getHash());
+    return this.data.get(query.queryKey);
   }
   put(query: QueryData, data: any) {
-    this.data.set(query.getHash(), data);
+    this.data.set(query.queryKey, data);
   }
   forget(query: QueryData) {
-    this.data.delete(query.getHash());
+    this.data.delete(query.queryKey);
   }
   flush() {
     this.data = new Map();

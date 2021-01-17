@@ -16,36 +16,36 @@ export class QueryBuilder {
     this.collection = collection;
   }
   create(obj: { data: KeyPair; select?: Array<string> }): QueryData {
-    return new QueryData(this.collection, 'create', obj);
+    return new QueryData(this.collection, 'create', obj, 'no-cache');
   }
   findOne(obj: { where: KeyPair; select?: Array<string> }): QueryData {
-    return new QueryData(this.collection, 'findOne', obj);
+    return new QueryData(this.collection, 'findOne', obj, 'cache-and-network');
   }
   findMany(obj: { where: KeyPair; select?: Array<string> }): QueryData {
-    return new QueryData(this.collection, 'findMany', obj);
+    return new QueryData(this.collection, 'findMany', obj, 'cache-and-network');
   }
   update(obj: {
     where: KeyPair;
     data: KeyPair;
     select?: Array<string>;
   }): QueryData {
-    return new QueryData(this.collection, 'update', obj);
+    return new QueryData(this.collection, 'update', obj, 'no-cache');
   }
   updateMany(obj: {
     where: KeyPair;
     data: KeyPair;
     select?: Array<string>;
   }): QueryData {
-    return new QueryData(this.collection, 'updateMany', obj);
+    return new QueryData(this.collection, 'updateMany', obj, 'no-cache');
   }
   delete(obj: { where: KeyPair; select?: Array<string> }): QueryData {
-    return new QueryData(this.collection, 'delete', obj);
+    return new QueryData(this.collection, 'delete', obj, 'no-cache');
   }
   deleteMany(obj: { where: KeyPair }): QueryData {
-    return new QueryData(this.collection, 'deleteMany', obj);
+    return new QueryData(this.collection, 'deleteMany', obj, 'no-cache');
   }
   count(obj: { where: KeyPair }): QueryData {
-    return new QueryData(this.collection, 'count', obj);
+    return new QueryData(this.collection, 'count', obj, 'cache-and-network');
   }
 }
 
