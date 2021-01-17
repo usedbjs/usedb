@@ -1,5 +1,5 @@
 import { useEffect, useContext, useReducer, useMemo, useCallback } from 'react';
-import { Connection, md5, QueryData } from '@usedb/core';
+import { Connection, QueryData } from '@usedb/core';
 import { UseDBReactContext } from '../context';
 import { refetchCallbacks } from '../utils';
 import { fetchReducer } from './reducers';
@@ -12,7 +12,7 @@ export function useDBQuery(queryData: QueryData) {
   } = useContext(UseDBReactContext);
 
   const queryHash = useMemo(() => {
-    return md5(JSON.stringify(queryData));
+    return queryData.getHash();
   }, [queryData]);
 
   const [state, dispatch] = useReducer(fetchReducer, {

@@ -7,5 +7,4 @@ export {
   CloudStorageBinding,
 } from './binding';
 export { createDB } from './cache';
-export { md5 } from './utils/md5';
 export { types } from 'mobx-state-tree';
