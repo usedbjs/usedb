@@ -8,7 +8,7 @@ type ISetQueryConfig = {
   optimistic: boolean;
 };
 
-export function useDB(queryData: QueryData) {
+export function useDB(queryData?: QueryData) {
   const {
     connection,
   }: {

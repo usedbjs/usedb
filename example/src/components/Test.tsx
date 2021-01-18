@@ -108,6 +108,12 @@ const PostItem = observer(({ post }: any) => {
   );
 });
 
+// 1. Define API for ORM on FE. Check Prisma and laravel, RoR.
+// 2. Define database in the NewsChat project.
+// 3. Custom Actions and typing support on results
+// 4. Fetching relationships and selected properties
+// 5. Calling mutations should normalize and update in cache db
+
 // Change useDBQuery, useDBMutation -> useDB
 // mutate API refactor, pass db.Post.create({ data: { id: '1', title: 'this is a post' } }) in mutate function
 // Replace refetch to fetch and add filter function
