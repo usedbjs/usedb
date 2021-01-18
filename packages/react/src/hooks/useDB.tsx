@@ -36,13 +36,15 @@ export function useDB(queryData?: QueryData) {
 
   // Used for getter queries
   const revalidate = useCallback(() => {
-    state.data
-      ? dispatchOnMounted({ type: 'REVALIDATING' })
-      : dispatchOnMounted({ type: 'LOADING' });
-    connection
-      .query(queryData)
-      .then(data => dispatchOnMounted({ type: 'SUCCESS', payload: data }))
-      .catch(error => dispatchOnMounted({ type: 'ERROR', payload: error }));
+    if (queryData) {
+      state.data
+        ? dispatchOnMounted({ type: 'REVALIDATING' })
+        : dispatchOnMounted({ type: 'LOADING' });
+      connection
+        .query(queryData)
+        .then(data => dispatchOnMounted({ type: 'SUCCESS', payload: data }))
+        .catch(error => dispatchOnMounted({ type: 'ERROR', payload: error }));
+    }
   }, [state.data]);
 
   // Used for mutation queries

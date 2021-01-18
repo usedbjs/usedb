@@ -1,6 +1,6 @@
 import * as React from 'react';
-import { db, QueryData, RuntimeReference } from '@usedb/core';
-import { refetchQueries, useDB, UseDBReactContext } from '@usedb/react';
+import { db, QueryData, RuntimeReference } from '@usedb-test/core';
+import { refetchQueries, useDB } from 'usedb-react';
 import { observer } from 'mobx-react-lite';
 import { useEffect } from 'react';
 

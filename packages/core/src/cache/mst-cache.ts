@@ -15,7 +15,7 @@ import { exerimentalMSTViews } from './experimental-mst-views';
 
 export const RuntimeReference = types.model('RuntimeReference', {
   __type: types.string,
-  id: types.string,
+  id: types.frozen(),
 });
 
 const RuntimeReferenceResolver = types.safeReference(RuntimeReference, {
@@ -42,7 +42,7 @@ const DB_NAME = 'MSTCache';
 
 export type DBInstance = Cache;
 
-type ICreateDBParams = { models: Array<IAnyModelType>; initialValue?: any };
+type ICreateDBParams = { models: Array<IAnyModelType> };
 
 type IModelKeyValue = {
   [key: string]: IAnyModelType;
@@ -55,12 +55,12 @@ type IModelMaps = {
 
 let modelKeyValue: IModelKeyValue = {};
 
-const createDB = ({ models, initialValue }: ICreateDBParams) => {
+const createModel = ({ models }: ICreateModelParams) => {
   let modelMaps: IModelMaps = {};
 
   models.forEach(model => {
     modelKeyValue[model.name] = model;
-    modelMaps[model.name] = types.map(model);
+    modelMaps[model.name] = types.optional(types.map(model), {});
   });
 
   const DBModel = types
@@ -90,9 +90,7 @@ const createDB = ({ models, initialValue }: ICreateDBParams) => {
           }
 
           // Getter queries add to the cache
-          if (query.fetchPolicy === 'cache-and-network') {
-            self[QUERY_CACHE_NAME].set(query.queryKey, normalizedResponse);
-          }
+          self[QUERY_CACHE_NAME].set(query.queryKey, normalizedResponse);
           console.log('snapshot ', getSnapshot(self));
         },
         _save(name: string, data: any) {
@@ -171,8 +169,7 @@ const createDB = ({ models, initialValue }: ICreateDBParams) => {
     })
     .views(exerimentalMSTViews);
 
-  const db = DBModel.create(initialValue);
-  return db;
+  return DBModel;
 };
 
 const normalizeResponse = (data: any, model: IAnyModelType) => {
@@ -184,4 +181,4 @@ const normalizeResponse = (data: any, model: IAnyModelType) => {
   return result;
 };
 
-export { createDB };
+export { createModel };
