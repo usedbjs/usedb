@@ -40,7 +40,7 @@ export function useDB(queryData: QueryData) {
       ? dispatchOnMounted({ type: 'REVALIDATING' })
       : dispatchOnMounted({ type: 'LOADING' });
     connection
-      .query(queryData, true)
+      .query(queryData)
       .then(data => dispatchOnMounted({ type: 'SUCCESS', payload: data }))
       .catch(error => dispatchOnMounted({ type: 'ERROR', payload: error }));
   }, [state.data]);
