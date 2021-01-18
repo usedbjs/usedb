@@ -1,6 +1,6 @@
 {
     "name": "@usedb/core",
-    "version": "0.0.1",
+    "version": "0.1.16",
     "description": "Official library for @usedb",
     "author": "GeekyAnts",
     "repository": {

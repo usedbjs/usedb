@@ -1,6 +1,6 @@
 {
   "name": "@usedb/react",
-  "version": "0.0.1",
+  "version": "0.1.8",
   "description": "Official React library for @usedb",
   "author": "GeekyAnts",
   "repository": {
@@ -27,7 +27,7 @@
     "react-dom": "^16.8.0"
   },
   "dependencies": {
-    "@usedb/core": "^0.0.1",
+    "@usedb/core": "0.1.16",
     "tslib": "^2.0.0"
   },
   "publishConfig": {
