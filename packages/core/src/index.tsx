@@ -6,5 +6,5 @@ export {
   LocalStorageBinding,
   CloudStorageBinding,
 } from './binding';
-export { createDB } from './cache';
+export * from './cache';
 export { types } from 'mobx-state-tree';

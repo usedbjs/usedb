@@ -1,38 +1,46 @@
 import * as React from 'react';
-import { db } from '@usedb/core';
-import { refetchQueries, useDB } from '@usedb/react';
+import { db, QueryData, RuntimeReference } from '@usedb/core';
+import { refetchQueries, useDB, UseDBReactContext } from '@usedb/react';
 import { observer } from 'mobx-react-lite';
 import { useEffect } from 'react';
 
-export const Test = function Test() {
-  const { setQuery, status } = useDB();
+const normalizer = (db: any) => ({ meta, data }: any) => {
+  // 1. Put data in store
+  db._save('Author', data, meta);
+  // 2. Generate Runtime resolver
+  const referenceData = RuntimeReference.create({
+    __type: 'Author',
+    id: data.authorId,
+  });
 
-  const handleSubmit = () => {
-    setQuery(
-      db.Post.create({
-        data: {
-          title: 'this is a post',
-          author: { authorId: '2', name: 'nishan' },
-        },
-      })
-    );
+  return {
+    meta,
+    data: referenceData,
   };
+};
 
-  useEffect(() => {
-    if (status === 'success') {
-      // Refetch
-      refetchQueries(db.Post.findMany({}));
-    }
-  }, [status]);
-
-  return (
-    <div>
-      <button disabled={status === 'loading'} onClick={handleSubmit}>
-        {status === 'loading' ? 'Creating' : 'Create a Post'}
-      </button>
-      <PostList />
-    </div>
+export const CustomActions = function Test() {
+  const { status, error, data } = useDB(
+    new QueryData(
+      'placeholder_name',
+      'fetchAuthor',
+      { data: { id: '1' } },
+      'cache-and-network',
+      normalizer
+    )
   );
+
+  console.log('status ', status, error, data?.data.name);
+
+  return null;
+  //   return (
+  //     <div>
+  //       <button disabled={status === 'loading'} onClick={handleSubmit}>
+  //         {status === 'loading' ? 'Creating' : 'Create a Post'}
+  //       </button>
+  //       <PostList />
+  //     </div>
+  //   );
 };
 
 const PostList = observer(() => {
@@ -49,7 +57,7 @@ const PostList = observer(() => {
   if (data) {
     return (
       <div>
-        {data.data.map(item => {
+        {data.map(item => {
           return (
             <div key={item.id}>
               <PostItem post={item} />

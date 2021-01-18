@@ -47,17 +47,16 @@ export default class RuntimeBinding implements Binding {
           }
           let queryResponse = this.processQuery(query);
 
-          if (queryResponse.error) {
-            reject(queryResponse.error);
-          }
-          resolve(queryResponse.data);
+          resolve(queryResponse);
         } catch (err) {
           reject(err);
         }
       });
     });
   }
-  private processQuery(query: QueryData): { data: any; error?: any } {
+  private processQuery(
+    query: QueryData
+  ): { meta: any; data: any; error?: any } {
     const { collection, operation, payload } = query;
     let returnValue: any;
     switch (operation) {
@@ -149,9 +148,12 @@ export default class RuntimeBinding implements Binding {
           returnValue = values.length;
         }
         break;
+      case 'fetchAuthor':
+        returnValue = { authorId: '1234', name: 'joe' };
+        break;
       default:
         break;
     }
-    return { data: returnValue };
+    return { meta: {}, data: returnValue };
   }
 }

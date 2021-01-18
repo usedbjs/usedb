@@ -13,7 +13,7 @@ import { Cache } from './index';
 import { QueryData } from '../query';
 import { exerimentalMSTViews } from './experimental-mst-views';
 
-const RuntimeReference = types.model('RuntimeReference', {
+export const RuntimeReference = types.model('RuntimeReference', {
   __type: types.string,
   id: types.string,
 });
@@ -29,10 +29,13 @@ const RuntimeReferenceResolver = types.safeReference(RuntimeReference, {
   },
 });
 
-const QueryCacheType = types.union(
-  RuntimeReferenceResolver,
-  types.array(RuntimeReferenceResolver)
-);
+const QueryCacheType = types.model('QueryCache', {
+  meta: types.optional(types.frozen(), {}),
+  data: types.union(
+    RuntimeReferenceResolver,
+    types.array(RuntimeReferenceResolver)
+  ),
+});
 
 const QUERY_CACHE_NAME = 'queryCache';
 const DB_NAME = 'MSTCache';
@@ -73,10 +76,18 @@ const createDB = ({ models, initialValue }: ICreateDBParams) => {
         get(query: QueryData) {
           return self[QUERY_CACHE_NAME].get(query.queryKey);
         },
-        put(query: QueryData, data: any) {
-          const model = modelKeyValue[query.collection];
-
-          const normalizedResponse = self._populate({ data, model });
+        put(query: QueryData, payload: any) {
+          const { data, meta } = payload;
+          let normalizedResponse;
+          if (query.normalizer) {
+            normalizedResponse = query.normalizer(self)(payload);
+          } else {
+            const model = modelKeyValue[query.collection];
+            normalizedResponse = {
+              data: self._populate({ data, model }),
+              meta,
+            };
+          }
 
           // Getter queries add to the cache
           if (query.fetchPolicy === 'cache-and-network') {

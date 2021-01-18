@@ -12,4 +12,7 @@ const Post = types.model(POST_COLLECTION_NAME, {
   author: types.safeReference(Author),
 });
 
-export const cacheDB = createDB({ models: [Post, Author], initialValue: {} });
+export const cacheDB = createDB({
+  models: [Post, Author],
+  initialValue: {},
+});

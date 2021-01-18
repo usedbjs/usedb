@@ -5,17 +5,20 @@ export default class QueryData {
   payload: any;
   queryKey: string;
   fetchPolicy: IFetchPolicy = 'cache-and-network';
+  normalizer?: any;
   constructor(
     collection: string,
     operation: string,
     payload: any,
-    fetchPolicy?: IFetchPolicy
+    fetchPolicy?: IFetchPolicy,
+    normalizer?: any
   ) {
     this.collection = collection;
     this.operation = operation;
     this.payload = payload;
     this.queryKey = getHash(this);
     this.fetchPolicy = fetchPolicy || this.fetchPolicy;
+    this.normalizer = normalizer;
   }
 }
 
