@@ -12,6 +12,8 @@ import normalize from 'mobx-state-tree-normalizr';
 import { Cache } from './index';
 import { QueryData } from '../query';
 import { exerimentalMSTViews } from './experimental-mst-views';
+import { deflateHelper, mergeHelper } from './deflateHelper';
+import { normalizeResponse } from './normalizeResponse';
 
 export const RuntimeReference = types.model('RuntimeReference', {
   __type: types.string,
@@ -30,11 +32,7 @@ const RuntimeReferenceResolver = types.safeReference(RuntimeReference, {
 });
 
 const QueryCacheType = types.model('QueryCache', {
-  meta: types.optional(types.frozen(), {}),
-  data: types.union(
-    RuntimeReferenceResolver,
-    types.array(RuntimeReferenceResolver)
-  ),
+  data: types.optional(types.map(types.frozen()), {}),
 });
 
 const QUERY_CACHE_NAME = 'queryCache';
@@ -42,7 +40,10 @@ const DB_NAME = 'MSTCache';
 
 export type DBInstance = Cache;
 
-type ICreateDBParams = { models: Array<IAnyModelType> };
+type ICreateDBParams = {
+  models: Array<IAnyModelType>;
+  actions: Array<IAnyModelType>;
+};
 
 type IModelKeyValue = {
   [key: string]: IAnyModelType;
@@ -55,43 +56,51 @@ type IModelMaps = {
 
 let modelKeyValue: IModelKeyValue = {};
 
-const createModel = ({ models }: ICreateModelParams) => {
+const createModel = ({ models, actions }: ICreateModelParams) => {
   let modelMaps: IModelMaps = {};
+  let actionKeyValue: IModelMaps = {};
 
   models.forEach(model => {
     modelKeyValue[model.name] = model;
     modelMaps[model.name] = types.optional(types.map(model), {});
   });
 
+  actions.forEach(action => {
+    actionKeyValue[action.name] = action;
+  });
+
   const DBModel = types
     .model(DB_NAME, {
       ...modelMaps,
-      [QUERY_CACHE_NAME]: types.optional(types.map(QueryCacheType), {}),
+      [QUERY_CACHE_NAME]: types.optional(types.map(types.frozen()), {}),
     })
     .actions(self => {
       return {
+        getTypeDef(typeName: string) {
+          return modelKeyValue[typeName];
+        },
+        merge(data) {
+          return mergeHelper(self, data);
+        },
+        deflate(data) {
+          return deflateHelper(self, data);
+        },
+        isRootType(typename) {
+          if (modelKeyValue[typename]) return true;
+        },
         has(query: QueryData) {
           return self[QUERY_CACHE_NAME].has(query.queryKey);
         },
         get(query: QueryData) {
-          return self[QUERY_CACHE_NAME].get(query.queryKey);
+          return self.merge(self[QUERY_CACHE_NAME].get(query.queryKey));
         },
         put(query: QueryData, payload: any) {
-          const { data, meta } = payload;
-          let normalizedResponse;
-          if (query.normalizer) {
-            normalizedResponse = query.normalizer(self)(payload);
-          } else {
-            const model = modelKeyValue[query.collection];
-            normalizedResponse = {
-              data: self._populate({ data, model }),
-              meta,
-            };
+          if (query.collection === 'actions') {
+            const model = actionKeyValue[query.operation];
+            const res = normalizeResponse(payload, model);
+            self.merge(res);
+            self[QUERY_CACHE_NAME].set(query.queryKey, self.deflate(res));
           }
-
-          // Getter queries add to the cache
-          self[QUERY_CACHE_NAME].set(query.queryKey, normalizedResponse);
-          console.log('snapshot ', getSnapshot(self));
         },
         _save(name: string, data: any) {
           const model = modelKeyValue[name];
@@ -170,15 +179,6 @@ const createModel = ({ models }: ICreateModelParams) => {
     .views(exerimentalMSTViews);
 
   return DBModel;
-};
-
-const normalizeResponse = (data: any, model: IAnyModelType) => {
-  let mstModel: any = model;
-  if (Array.isArray(data)) {
-    mstModel = [model];
-  }
-  const result = normalize(data, mstModel);
-  return result;
 };
 
 export { createModel };

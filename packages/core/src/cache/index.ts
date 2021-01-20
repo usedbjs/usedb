@@ -22,3 +22,4 @@ export class Cache {
 }
 
 export * from './mst-cache';
+export * from './normalizeResponse';

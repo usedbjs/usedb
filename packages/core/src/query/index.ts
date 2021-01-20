@@ -1,4 +1,4 @@
-import QueryData from './QueryData';
+import QueryData, { IFetchPolicy } from './QueryData';
 
 export { QueryData };
 export interface RootQueryBuilder {
@@ -53,6 +53,14 @@ export const db: RootQueryBuilder = new Proxy(
   {},
   {
     get: (_obj, prop: string) => {
+      if (prop === 'actions') {
+        return (
+          { name, params }: { name: string; params: any },
+          fetchPolicy: IFetchPolicy
+        ): QueryData => {
+          return new QueryData('actions', name, params, fetchPolicy);
+        };
+      }
       return new QueryBuilder(prop);
     },
   }

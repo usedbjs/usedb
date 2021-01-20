@@ -7,4 +7,4 @@ export {
   CloudStorageBinding,
 } from './binding';
 export * from './cache';
-export { types } from 'mobx-state-tree';
+export * from 'mobx-state-tree';

@@ -1,4 +1,4 @@
-type IFetchPolicy = 'no-cache' | 'cache-and-network';
+export type IFetchPolicy = 'no-cache' | 'cache-and-network';
 export default class QueryData {
   collection: string;
   operation: string;
