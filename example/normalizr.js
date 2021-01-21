@@ -93,7 +93,6 @@ function normalizeFromModel(input, model) {
 
   const processedEntity = {};
 
-  console.log('model ', model.forAllProps);
   model.forAllProps((name, childType) => {
     processedEntity[name] = this.normalizeFromAnyType(input[name], childType);
   });

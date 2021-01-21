@@ -13,7 +13,7 @@ import { Cache } from './index';
 import { QueryData } from '../query';
 import { exerimentalMSTViews } from './experimental-mst-views';
 import { deflateHelper, mergeHelper } from './deflateHelper';
-import { normalizeResponse } from './normalizeResponse';
+import { normalizeResponseGenerator } from './normalizeResponse';
 
 export const RuntimeReference = types.model('RuntimeReference', {
   __type: types.string,
@@ -75,6 +75,7 @@ const createModel = ({ models, actions }: ICreateModelParams) => {
       [QUERY_CACHE_NAME]: types.optional(types.map(types.frozen()), {}),
     })
     .actions(self => {
+      let normalizeResponse = normalizeResponseGenerator(self);
       return {
         getTypeDef(typeName: string) {
           return modelKeyValue[typeName];
@@ -97,9 +98,16 @@ const createModel = ({ models, actions }: ICreateModelParams) => {
         put(query: QueryData, payload: any) {
           if (query.collection === 'actions') {
             const model = actionKeyValue[query.operation];
-            const res = normalizeResponse(payload, model);
-            self.merge(res);
-            self[QUERY_CACHE_NAME].set(query.queryKey, self.deflate(res));
+            if (model) {
+              const res = normalizeResponse(payload, model);
+              self.merge(res);
+
+              self[QUERY_CACHE_NAME].set(query.queryKey, self.deflate(res));
+              console.log('snapshot ', getSnapshot(self));
+              return self.get(query);
+            } else {
+              return payload;
+            }
           }
         },
         _save(name: string, data: any) {

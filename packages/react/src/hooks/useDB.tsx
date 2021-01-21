@@ -14,13 +14,19 @@ export function useDB(queryData?: QueryData) {
   }: {
     connection: Connection;
   } = useContext(UseDBReactContext);
-  const mounted = useRef(false);
+  const mounted = useRef(true);
 
   const [state, dispatch] = useReducer(fetchReducer, {
     status: 'idle',
     data: undefined,
     error: undefined,
   });
+
+  useEffect(() => {
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
 
   const dispatchOnMounted = (...args: any) => {
     if (mounted.current) {
@@ -80,13 +86,6 @@ export function useDB(queryData?: QueryData) {
       }
     };
   }, [revalidate]);
-
-  useEffect(() => {
-    mounted.current = true;
-    return () => {
-      mounted.current = false;
-    };
-  }, []);
 
   return { setQuery, ...state };
 }

@@ -49,19 +49,31 @@ export class QueryBuilder {
   }
 }
 
-export const db: RootQueryBuilder = new Proxy(
+export const db: any = new Proxy(
   {},
   {
     get: (_obj, prop: string) => {
       if (prop === 'actions') {
-        return (
-          { name, params }: { name: string; params: any },
-          fetchPolicy: IFetchPolicy
-        ): QueryData => {
-          return new QueryData('actions', name, params, fetchPolicy);
-        };
+        return actionProxy;
       }
+
       return new QueryBuilder(prop);
+    },
+  }
+);
+
+type IActionParams = {
+  params: any;
+  fetchPolicy: IFetchPolicy;
+};
+
+const actionProxy = new Proxy(
+  {},
+  {
+    get: (_obj, actionName: string) => {
+      return ({ params, fetchPolicy }: IActionParams): QueryData => {
+        return new QueryData('actions', actionName, params, fetchPolicy);
+      };
     },
   }
 );

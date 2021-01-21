@@ -1,16 +1,16 @@
-import { types, createModel, normalizeResponse } from '@usedb/core';
+import { types, createModel } from '@usedb/core';
 
 const Date = types.string;
 
 const User = types.model('User', {
   userID: types.identifierNumber,
-  userHandle: types.string,
-  userFirstName: types.string,
-  userLastName: types.string,
-  userProfilePicture: types.string,
-  userNumFollowers: types.number,
-  userNumFollowing: types.number,
-  userIsFollowed: types.boolean,
+  userHandle: types.maybe(types.string),
+  userFirstName: types.maybe(types.string),
+  userLastName: types.maybe(types.string),
+  userProfilePicture: types.maybe(types.string),
+  userNumFollowers: types.maybe(types.number),
+  userNumFollowing: types.maybe(types.number),
+  userIsFollowed: types.maybe(types.boolean),
 });
 
 const Channel = types.model('Channel', {
@@ -33,6 +33,7 @@ const Article = types.model('Article', {
   articleNumShares: types.number,
   articleIsLiked: types.boolean,
   articleIsSaved: types.boolean,
+  channel: types.safeReference(Channel),
 });
 
 const Post = types.model('Post', {
@@ -46,7 +47,6 @@ const Post = types.model('Post', {
   postIsSaved: types.boolean,
   postUser: types.safeReference(User),
   article: types.safeReference(Article),
-  channel: types.safeReference(Channel),
 });
 
 const Topic = types.model('Topic', {
@@ -70,7 +70,7 @@ const Repost = types.model('Repost', {
   repostIsLiked: types.boolean,
   repostIsSaved: types.boolean,
   repostUser: types.safeReference(User),
-  post: types.safeReference(User),
+  post: types.safeReference(Post),
 });
 
 const LikedPosts = types.model('LikedPosts', {
@@ -81,7 +81,7 @@ const LikedPosts = types.model('LikedPosts', {
 });
 
 const LikedArticles = types.model('LikedArticles', {
-  alId: types.identifierNumber,
+  alID: types.identifierNumber,
   alTimeLiked: Date,
   alUser: types.safeReference(User),
   article: types.safeReference(Article),
@@ -125,45 +125,61 @@ const Group = types.model('Group', {
   groupIsJoined: types.boolean,
 });
 
-const CommonResponseType = types.model('CommonResponseType', {
-  success: types.boolean,
-});
-
 const models = [
   User,
   Channel,
   Article,
   Post,
+  Repost,
+  LikedArticles,
+  LikedPosts,
   Topic,
   RSSSectionData,
-  Repost,
   Group,
 ];
 
 export const actions = {
-  HomeFeedActionModel: types.model('HomeFeedActionModel', {
+  getHomeFeed: types.model('getHomeFeed', {
     success: types.boolean,
     data: types.model({
       content: types.array(
         types.union(
           {
             dispatcher: snapshot => {
-              if (snapshot.articleID) {
-                return Article;
-              } else if (snapshot.repostID) {
+              if (snapshot.repostID !== undefined) {
                 return Repost;
+              } else if (snapshot.alID !== undefined) {
+                return LikedArticles;
+              } else if (snapshot.plID !== undefined) {
+                return LikedPosts;
+              } else if (snapshot.postID !== undefined) {
+                return Post;
               }
-              return Post;
+              return Article;
             },
           },
           types.reference(Article),
           types.reference(Repost),
-          types.reference(Post)
+          types.reference(Post),
+          types.reference(LikedArticles),
+          types.reference(LikedPosts)
         )
       ),
     }),
   }),
+  getChannels: types.model('getChannels', {
+    success: types.boolean,
+    data: types.array(types.safeReference(Channel)),
+  }),
+  createPost: types.model('createPost', {
+    success: types.boolean,
+    data: types.reference(Post),
+  }),
 };
 
-const dbModel = createModel({ models, actions: [actions.HomeFeedActionModel] });
+const dbModel = createModel({
+  models,
+  actions: Object.keys(actions).map(key => actions[key]),
+});
+
 export const db = dbModel.create();

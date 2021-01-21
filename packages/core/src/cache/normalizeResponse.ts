@@ -24,100 +24,105 @@ export function isPlainObject(obj) {
 
 const ANONYMOUS_MODEL = 'AnonymousModel';
 
-function normalizeFromOptionalType(input, type) {
-  if (!input) {
-    input = type.getDefaultInstanceOrSnapshot();
-  }
-  return normalizeFromAnyType(input, type._subtype);
-}
-
-function normalizeFromArrayType(input, type) {
-  if (!input) input = [];
-  const subType = type._subType;
-  const processedEntity: any = [];
-  input.forEach((item, index) => {
-    processedEntity[index] = normalizeFromAnyType(item, subType);
-  });
-  return processedEntity;
-}
-
-function normalizeFromReferenceType(input, type) {
-  const realType = type.targetType;
-  return normalizeFromAnyType(input, realType);
-}
-
-function normalizeFromModel(input, model) {
-  if (!input) {
-    return;
+export function normalizeResponseGenerator(db) {
+  function normalizeFromOptionalType(input, type) {
+    if (!input) {
+      input = type.getDefaultInstanceOrSnapshot();
+    }
+    return normalizeFromAnyType(input, type._subtype);
   }
 
-  if (!isPlainObject(input)) {
-    return input;
+  function normalizeFromArrayType(input, type) {
+    if (!input) input = [];
+    const subType = type._subType;
+    const processedEntity: any = [];
+    input.forEach((item, index) => {
+      processedEntity[index] = normalizeFromAnyType(item, subType);
+    });
+    return processedEntity;
   }
 
-  const processedEntity = {};
+  function normalizeFromReferenceType(input, type) {
+    const realType = type.targetType;
+    return normalizeFromAnyType(input, realType);
+  }
 
-  model.forAllProps((name, childType) => {
-    processedEntity[name] = normalizeFromAnyType(input[name], childType);
-  });
-  return {
-    ...processedEntity,
-    id: getIdentifierValue(processedEntity, model),
-    __typename: model.name,
-  };
-}
-
-const getIdentifierValue = (input, model) => {
-  const entityType = model.identifierAttribute || 'id';
-  return input[entityType];
-};
-
-function normalizeFromUnionType(input, type) {
-  const realType =
-    type.determineType(input, undefined) ||
-    type._types.find(x => isReferenceType(x));
-
-  return normalizeFromAnyType(input, realType);
-}
-
-function normalizeFromLateType(input, type) {
-  const realType = type.getSubType();
-  return normalizeFromAnyType(input, realType);
-}
-
-function normalizeFromAnyType(input, type) {
-  if (isLateType(type)) {
-    return normalizeFromLateType(input, type);
-  } else if (isModelType(type)) {
-    if (type.name.indexOf(ANONYMOUS_MODEL) >= 0) {
-      const tempResult = {};
-      //@ts-ignore
-      type.forAllProps((name, childType) => {
-        let val = normalizeFromAnyType(input[name], childType);
-        tempResult[name] = val;
-      });
-      return tempResult;
+  function normalizeFromModel(input, model) {
+    if (!input) {
+      return;
     }
 
-    return normalizeFromModel(input, type);
-  } else if (isUnionType(type)) {
-    return normalizeFromUnionType(input, type);
-  } else if (isOptionalType(type)) {
-    return normalizeFromOptionalType(input, type);
-  } else if (isArrayType(type)) {
-    return normalizeFromArrayType(input, type);
-  } else if (isReferenceType(type)) {
-    return normalizeFromReferenceType(input, type);
-  } else {
-    return input;
-  }
-}
+    if (!isPlainObject(input)) {
+      return input;
+    }
 
-export const normalizeResponse = (input: any, model: IAnyModelType) => {
-  let res = {};
-  //@ts-ignore
-  model.forAllProps((name, childType) => {
-    res[name] = normalizeFromAnyType(input[name], childType);
-  });
-  return res;
-};
+    const processedEntity = {};
+
+    model.forAllProps((name, childType) => {
+      processedEntity[name] = normalizeFromAnyType(input[name], childType);
+    });
+    return {
+      ...processedEntity,
+      id: getIdentifierValue(processedEntity, model),
+      __typename: model.name,
+    };
+  }
+
+  const getIdentifierValue = (input, model) => {
+    const entityType = model.identifierAttribute || 'id';
+    return input[entityType];
+  };
+
+  function normalizeFromUnionType(input, type) {
+    const realType =
+      type.determineType(input, undefined) ||
+      type._types.find(x => isReferenceType(x));
+
+    return normalizeFromAnyType(input, realType);
+  }
+
+  function normalizeFromLateType(input, type) {
+    const realType = type.getSubType();
+    return normalizeFromAnyType(input, realType);
+  }
+
+  function normalizeFromAnyType(input, type) {
+    if (isLateType(type)) {
+      return normalizeFromLateType(input, type);
+    } else if (isModelType(type)) {
+      if (db.isRootType(type.name)) {
+        return normalizeFromModel(input, type);
+      } else {
+        const tempResult = {};
+        //@ts-ignore
+        type.forAllProps((name, childType) => {
+          let val = normalizeFromAnyType(input[name], childType);
+          tempResult[name] = val;
+        });
+        return tempResult;
+      }
+    } else if (isUnionType(type)) {
+      return normalizeFromUnionType(input, type);
+    } else if (isOptionalType(type)) {
+      return normalizeFromOptionalType(input, type);
+    } else if (isArrayType(type)) {
+      return normalizeFromArrayType(input, type);
+    } else if (isReferenceType(type)) {
+      return normalizeFromReferenceType(input, type);
+    } else {
+      return input;
+    }
+  }
+
+  const normalizeResponse = (input: any, model: IAnyModelType) => {
+    let res = {};
+    //@ts-ignore
+    model.forAllProps((name, childType) => {
+      res[name] = normalizeFromAnyType(input[name], childType);
+    });
+
+    return res;
+  };
+
+  return normalizeResponse;
+}

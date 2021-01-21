@@ -1,14 +1,49 @@
 import * as React from 'react';
 import { db } from '@usedb/core';
-import { refetchQueries, useDB } from '@usedb/react';
-import { observer } from 'mobx-react-lite';
-import { useEffect } from 'react';
+import { useDB } from '@usedb/react';
 
 export const Test = function Test() {
-  const { status, data } = useDB(
-    db.actions({ name: 'HomeFeedActionModel', params: {} })
+  const { data: homeFeedData, error } = useDB(
+    db.actions.getHomeFeed({ params: {} })
   );
-  console.log('actions ', data);
 
-  return <div>hi</div>;
+  const { setQuery, data, status } = useDB();
+
+  const handleCreatePost = () => {
+    const data = {
+      caption: 'this is a post',
+      article_id: 0,
+    };
+    setQuery(db.actions.createPost({ params: data }));
+  };
+
+  const renderHomeFeed = () => {
+    if (homeFeedData) {
+      return homeFeedData.data.content.map((p, idx) => {
+        switch (p.__typename) {
+          case 'Article':
+            return <div key={idx}>{p.channel.channelName}</div>;
+          case 'Post':
+            return <div key={idx}>{p.article.channel.channelName}</div>;
+          case 'Repost':
+            return <div key={idx}>Liked articles</div>;
+          case 'LikedArticles':
+            return <div key={idx}>Liked articles</div>;
+          case 'LikedPosts':
+            return <div key={idx}>Liked posts</div>;
+          default:
+            return null;
+        }
+      });
+    }
+  };
+
+  return (
+    <div>
+      {renderHomeFeed()}
+      <button disabled={status === 'loading'} onClick={handleCreatePost}>
+        Create post
+      </button>
+    </div>
+  );
 };
