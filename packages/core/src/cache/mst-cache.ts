@@ -7,12 +7,13 @@ import {
   getSnapshot,
   destroy,
   getRoot,
+  isModelType,
 } from 'mobx-state-tree';
 import normalize from 'mobx-state-tree-normalizr';
 import { Cache } from './index';
 import { QueryData } from '../query';
 import { exerimentalMSTViews } from './experimental-mst-views';
-import { deflateHelper, mergeHelper } from './deflateHelper';
+import { deflateHelper, mergeHelper, denormalizeHelper } from './deflateHelper';
 import { normalizeResponseGenerator } from './normalizeResponse';
 
 export const RuntimeReference = types.model('RuntimeReference', {
@@ -66,13 +67,27 @@ const createModel = ({ models, actions }: ICreateModelParams) => {
   });
 
   actions.forEach(action => {
-    actionKeyValue[action.name] = action;
+    if (isModelType(action)) {
+      actionKeyValue[action.name] = action;
+    } else {
+      actionKeyValue[action.name] = action.type;
+    }
   });
 
   const DBModel = types
     .model(DB_NAME, {
       ...modelMaps,
       [QUERY_CACHE_NAME]: types.optional(types.map(types.frozen()), {}),
+    })
+    .views(self => {
+      return {
+        denormalize(key) {
+          const cache = self[QUERY_CACHE_NAME].get(key);
+          const dd = denormalizeHelper(self, cache);
+          return dd;
+          // return mergeHelper(self, data);
+        },
+      };
     })
     .actions(self => {
       let normalizeResponse = normalizeResponseGenerator(self);
@@ -93,21 +108,28 @@ const createModel = ({ models, actions }: ICreateModelParams) => {
           return self[QUERY_CACHE_NAME].has(query.queryKey);
         },
         get(query: QueryData) {
-          return self.merge(self[QUERY_CACHE_NAME].get(query.queryKey));
+          return self[QUERY_CACHE_NAME].get(query.queryKey);
         },
         put(query: QueryData, payload: any) {
+          let model;
           if (query.collection === 'actions') {
-            const model = actionKeyValue[query.operation];
-            if (model) {
-              const res = normalizeResponse(payload, model);
-              self.merge(res);
+            model = actionKeyValue[query.operation];
+            // Need a model to insert into the store
+          } else {
+            model = modelKeyValue[query.collection];
+          }
 
-              self[QUERY_CACHE_NAME].set(query.queryKey, self.deflate(res));
-              console.log('snapshot ', getSnapshot(self));
-              return self.get(query);
+          if (model) {
+            const res = normalizeResponse(payload, model);
+            const hydratedRes = self.merge(res);
+            if (query.fetchPolicy === 'no-cache') {
+              return hydratedRes;
             } else {
-              return payload;
+              self[QUERY_CACHE_NAME].set(query.queryKey, self.deflate(res));
+              return self.get(query);
             }
+          } else {
+            return payload;
           }
         },
         _save(name: string, data: any) {
@@ -181,6 +203,9 @@ const createModel = ({ models, actions }: ICreateModelParams) => {
           return function undo() {
             recorder.undo();
           };
+        },
+        runInAction(callback: any) {
+          callback();
         },
       };
     })

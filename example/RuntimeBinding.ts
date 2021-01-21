@@ -1,237 +1,28 @@
 import { QueryData, Binding } from '@usedb/core';
-import { actions, db } from './dbConfig';
-import { homeFeedTransformer, postTransformer } from './transformers';
+import { posts, users } from './data/mock';
 const artificialDelay = (fn: any) => setTimeout(fn, 1000);
 
-export const articleTransformer = (data: any) => {
-  let d;
-  if (Array.isArray(data)) {
-    d = [];
-    return data.forEach(articleTransformer);
-  } else {
-    return {
-      ...data,
-      channel: {
-        channelID: data.channelID,
-        channelName: data.channelName,
-        channelIcon: data.channelIcon,
-        channelLogo: data.channelLogo,
-        channelTrustType: data.channelTrustType,
-      },
-    };
-  }
+const getPosts = ({ limit, offset }) => {
+  return posts.slice(offset, offset + limit);
 };
 
-const dummyHomeFeedRes = {
-  success: true,
-  data: {
-    content: [
-      {
-        articleID: 0,
-        articleTimePublished: '2021-01-20T10:35:39.886Z',
-        articleImage: 'string',
-        articleHeadline: 'string',
-        articleIntroText: 'string',
-        articleLink: 'string',
-        articleNumLikes: 0,
-        articleNumComments: 0,
-        articleNumShares: 0,
-        articleIsLiked: true,
-        articleIsSaved: true,
-        channelID: 0,
-        channelName: 'string',
-        channelIcon: 'string',
-        channelLogo: 'string',
-        channelTrustType: 0,
-      },
-      {
-        postID: 0,
-        postCaption: 'string',
-        postTimePublished: '2021-01-20T10:35:39.886Z',
-        postNumLikes: 0,
-        postNumComments: 0,
-        postNumShares: 0,
-        postIsLiked: true,
-        postIsSaved: true,
-        postUserID: 0,
-        postUserFirstName: 'string',
-        postUserLastName: 'string',
-        postUserProfilePicture: 'string',
-        articleID: 0,
-        articleTimePublished: '2021-01-20T10:35:39.886Z',
-        articleImage: 'string',
-        articleHeadline: 'string',
-        articleIntroText: 'string',
-        articleLink: 'string',
-        articleNumLikes: 0,
-        articleNumComments: 0,
-        articleNumShares: 0,
-        articleIsLiked: true,
-        articleIsSaved: true,
-        channelID: 0,
-        channelName: 'string',
-        channelIcon: 'string',
-        channelLogo: 'string',
-        channelTrustType: 0,
-      },
-      {
-        repostID: 0,
-        repostCaption: 'string',
-        repostTimePublished: '2021-01-20T10:35:39.886Z',
-        repostNumLikes: 0,
-        repostNumComments: 0,
-        repostNumShares: 0,
-        repostIsLiked: true,
-        repostIsSaved: true,
-        repostUserID: 0,
-        repostUserFirstName: 'string',
-        repostUserLastName: 'string',
-        repostUserProfilePicture: 'string',
-        postID: 0,
-        postCaption: 'string',
-        postTimePublished: '2021-01-20T10:35:39.886Z',
-        postNumLikes: 0,
-        postNumComments: 0,
-        postNumShares: 0,
-        postIsLiked: true,
-        postIsSaved: true,
-        postUserID: 0,
-        postUserFirstName: 'string',
-        postUserLastName: 'string',
-        postUserProfilePicture: 'string',
-        articleID: 0,
-        articleTimePublished: '2021-01-20T10:35:39.886Z',
-        articleImage: 'string',
-        articleHeadline: 'string',
-        articleIntroText: 'string',
-        articleLink: 'string',
-        articleNumLikes: 0,
-        articleNumComments: 0,
-        articleNumShares: 0,
-        articleIsLiked: true,
-        articleIsSaved: true,
-        channelID: 0,
-        channelName: 'string',
-        channelIcon: 'string',
-        channelLogo: 'string',
-        channelTrustType: 0,
-      },
-      {
-        alID: 0,
-        alTimeLiked: '2021-01-20T10:35:39.886Z',
-        alUserID: 0,
-        alUserFirstName: 'string',
-        alUserLastName: 'string',
-        alUserProfilePicture: 'string',
-        articleID: 0,
-        articleTimePublished: '2021-01-20T10:35:39.886Z',
-        articleImage: 'string',
-        articleHeadline: 'string',
-        articleIntroText: 'string',
-        articleLink: 'string',
-        articleNumLikes: 0,
-        articleNumComments: 0,
-        articleNumShares: 0,
-        articleIsLiked: true,
-        articleIsSaved: true,
-        channelID: 0,
-        channelName: 'string',
-        channelIcon: 'string',
-        channelLogo: 'string',
-        channelTrustType: 0,
-      },
-      {
-        plID: 0,
-        plTimeLiked: '2021-01-20T10:35:39.886Z',
-        plUserID: 0,
-        plUserFirstName: 'string',
-        plUserLastName: 'string',
-        plUserProfilePicture: 'string',
-        postID: 0,
-        postCaption: 'string',
-        postTimePublished: '2021-01-20T10:35:39.886Z',
-        postNumLikes: 0,
-        postNumComments: 0,
-        postNumShares: 0,
-        postIsLiked: true,
-        postIsSaved: true,
-        postUserID: 0,
-        postUserFirstName: 'string',
-        postUserLastName: 'string',
-        postUserProfilePicture: 'string',
-        articleID: 0,
-        articleTimePublished: '2021-01-20T10:35:39.886Z',
-        articleImage: 'string',
-        articleHeadline: 'string',
-        articleIntroText: 'string',
-        articleLink: 'string',
-        articleNumLikes: 0,
-        articleNumComments: 0,
-        articleNumShares: 0,
-        articleIsLiked: true,
-        articleIsSaved: true,
-        channelID: 0,
-        channelName: 'string',
-        channelIcon: 'string',
-        channelLogo: 'string',
-        channelTrustType: 0,
-      },
-    ],
-    offsets: {
-      articleOffsets: {},
-      postsOffset: 0,
-      repostsOffset: 0,
-      articleLikesOffset: 0,
-      postLikesOffset: 0,
-    },
-  },
+const createPost = ({ text }) => {
+  const newPost = {
+    id: Math.random(),
+    text,
+    isLiked: false,
+    user: users[0],
+  };
+  posts.unshift(newPost);
+  return newPost;
 };
 
-const dummyCreatePostResponse = {
-  success: true,
-  data: {
-    postID: 23,
-    postCaption: 'string',
-    postTimePublished: '2021-01-20T13:19:10.334Z',
-    postNumLikes: 0,
-    postNumComments: 0,
-    postNumShares: 0,
-    postIsLiked: true,
-    postIsSaved: true,
-    postUserID: 0,
-    postUserFirstName: 'string',
-    postUserLastName: 'string',
-    postUserProfilePicture: 'string',
-    articleID: 0,
-    articleTimePublished: '2021-01-20T13:19:10.334Z',
-    articleImage: 'string',
-    articleHeadline: 'string',
-    articleIntroText: 'string',
-    articleLink: 'string',
-    articleNumLikes: 0,
-    articleNumComments: 0,
-    articleNumShares: 0,
-    articleIsLiked: true,
-    articleIsSaved: true,
-    channelID: 0,
-    channelName: 'string',
-    channelIcon: 'string',
-    channelLogo: 'string',
-    channelTrustType: 0,
-  },
+const toggleLikePost = ({ id }) => {
+  const post = posts.find(p => p.id === id);
+  post?.isLiked = !post?.isLiked;
+  return post;
 };
-const channelsDummy = {
-  success: true,
-  data: [
-    {
-      channelID: 122,
-      channelIcon: 'ef',
-      channelLogo: 'd',
-      channelName: 'name',
-      channelTrustType: 2,
-    },
-  ],
-};
+
 export class RuntimeBinding implements Binding {
   db: any = [];
   getAllCollections(): Promise<any> {
@@ -267,20 +58,28 @@ export class RuntimeBinding implements Binding {
   }
 
   private async processQuery(query: QueryData): Promise<any> {
-    const { collection, operation, payload } = query;
+    const { collection, operation, payload = {} } = query;
     let returnValue: any;
     switch (operation) {
-      case 'getHomeFeed':
-        // const res = homeFeedTransformer(dummyHomeFeedRes);
-        // console.log('res ', res);
-        return homeFeedTransformer(dummyHomeFeedRes);
-      case 'getChannels':
-        return channelsDummy;
+      case 'getPosts':
+        return getPosts({ offset: payload.offset, limit: payload.limit });
+
       case 'createPost':
-        return {
-          success: true,
-          data: postTransformer(dummyCreatePostResponse.data),
-        };
+        return createPost(payload);
+
+      case 'toggleLikePost':
+        return toggleLikePost(payload);
+
+      case 'deletePost':
+        return { success: true };
+
+      case 'findOne':
+        return users.find(d => payload.where.id === d.id);
+
+      case 'update':
+        const user = users.find(d => d.id === payload.where.id);
+        user?.username = payload.data.username;
+        return user;
       default:
         break;
     }

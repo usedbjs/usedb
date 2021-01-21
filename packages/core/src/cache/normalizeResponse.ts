@@ -116,10 +116,18 @@ export function normalizeResponseGenerator(db) {
 
   const normalizeResponse = (input: any, model: IAnyModelType) => {
     let res = {};
-    //@ts-ignore
-    model.forAllProps((name, childType) => {
-      res[name] = normalizeFromAnyType(input[name], childType);
-    });
+    if (isModelType(model)) {
+      if (db.isRootType(model.name)) {
+        res.id = input[model.identifierAttribute];
+        res.__typename = model.name;
+      }
+
+      model.forAllProps((name, childType) => {
+        res[name] = normalizeFromAnyType(input[name], childType);
+      });
+    } else {
+      res = normalizeFromAnyType(input, model);
+    }
 
     return res;
   };

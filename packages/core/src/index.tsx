@@ -1,4 +1,10 @@
-export { db, RootQueryBuilder, QueryBuilder, QueryData } from './query';
+export {
+  db,
+  RootQueryBuilder,
+  QueryBuilder,
+  QueryData,
+  getHash,
+} from './query';
 export { Connection } from './connection';
 export {
   Binding,

@@ -3,7 +3,7 @@ import { QueryData } from '@usedb/core';
 const refetchMap = new Map<any, any>();
 type ICallback = () => any;
 
-export const refetchCallbacks = {
+const refetchCallbacks = {
   set(query: QueryData, val: ICallback) {
     const existing = refetchCallbacks.get(query);
     refetchMap.set(query.queryKey, [...existing, val]);
@@ -35,4 +35,4 @@ const refetchQueries = (query: QueryData) => {
   callbacks.forEach((callback: any) => callback());
 };
 
-export { refetchQueries };
+export { refetchQueries, refetchCallbacks, refetchMap };

@@ -1,6 +1,6 @@
-import QueryData, { IFetchPolicy } from './QueryData';
+import QueryData, { IFetchPolicy, getHash } from './QueryData';
 
-export { QueryData };
+export { QueryData, getHash };
 export interface RootQueryBuilder {
   [key: string]: QueryBuilder;
 }
@@ -65,6 +65,9 @@ export const db: any = new Proxy(
 type IActionParams = {
   params: any;
   fetchPolicy: IFetchPolicy;
+  normalizer?: any;
+  queryKey?: string;
+  append?: boolean;
 };
 
 const actionProxy = new Proxy(
@@ -76,7 +79,10 @@ const actionProxy = new Proxy(
           'actions',
           actionName,
           config?.params,
-          config?.fetchPolicy
+          config?.fetchPolicy,
+          config?.normalizer,
+          config?.queryKey,
+          config?.append
         );
       };
     },

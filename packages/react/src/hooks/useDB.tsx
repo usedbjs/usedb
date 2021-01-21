@@ -1,7 +1,15 @@
-import { QueryData, Connection } from '@usedb/core';
+//@ts-nocheck
+import { QueryData, Connection, getHash } from '@usedb/core';
 import { refetchCallbacks } from '../utils';
 import { UseDBReactContext } from '../context';
-import { useCallback, useContext, useEffect, useReducer, useRef } from 'react';
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+} from 'react';
 import { fetchReducer } from './reducers';
 
 type ISetQueryConfig = {
@@ -14,6 +22,9 @@ export function useDB(queryData?: QueryData) {
   }: {
     connection: Connection;
   } = useContext(UseDBReactContext);
+  const queryHash = useMemo(() => {
+    return getHash(queryData);
+  }, [queryData]);
   const mounted = useRef(true);
 
   const [state, dispatch] = useReducer(fetchReducer, {
@@ -38,20 +49,24 @@ export function useDB(queryData?: QueryData) {
     if (queryData) {
       revalidate();
     }
-  }, [queryData && queryData.queryKey]);
+  }, [queryData && queryHash]);
 
   // Used for getter queries
   const revalidate = useCallback(() => {
     if (queryData) {
-      state.data
-        ? dispatchOnMounted({ type: 'REVALIDATING' })
-        : dispatchOnMounted({ type: 'LOADING' });
+      // console.log('query data in revalidate ', queryData);
+      dispatchOnMounted({ type: 'LOADING' });
       connection
         .query(queryData)
-        .then(data => dispatchOnMounted({ type: 'SUCCESS', payload: data }))
+        .then(data =>
+          dispatchOnMounted({
+            type: 'SUCCESS',
+            payload: data,
+          })
+        )
         .catch(error => dispatchOnMounted({ type: 'ERROR', payload: error }));
     }
-  }, [state.data]);
+  }, [queryData && queryHash, state.data]);
 
   // Used for mutation queries
   const setQuery = (query: QueryData, config?: ISetQueryConfig) => {
@@ -68,7 +83,10 @@ export function useDB(queryData?: QueryData) {
     connection
       .query(query)
       .then(data => {
-        dispatchOnMounted({ type: 'SUCCESS', payload: data });
+        dispatchOnMounted({
+          type: 'SUCCESS',
+          payload: data,
+        });
       })
       .catch(error => {
         dispatchOnMounted({ type: 'ERROR', payload: error });
@@ -86,6 +104,12 @@ export function useDB(queryData?: QueryData) {
       }
     };
   }, [revalidate]);
+
+  if (queryData) {
+    if (connection.cache.has(queryData)) {
+      state.data = connection.cache.denormalize(queryData?.queryKey);
+    }
+  }
 
   return { setQuery, ...state };
 }

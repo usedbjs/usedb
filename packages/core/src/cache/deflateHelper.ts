@@ -24,8 +24,37 @@ export function mergeHelper(store: any, data: any) {
         instance = typeDef.create(snapshot);
         if (store.isRootType(__typename)) {
           store[__typename].set(id, snapshot);
+          // Get it from store to resolve nested references
+          instance = store[__typename].get(id);
         }
       }
+      return instance;
+    } else {
+      return snapshot;
+    }
+  }
+
+  return merge(data);
+}
+
+export function denormalizeHelper(store: any, data: any) {
+  function merge(data: any): any {
+    if (!data || typeof data !== 'object') return data;
+    if (Array.isArray(data)) return data.map(merge);
+
+    const { __typename, id } = data;
+
+    // convert values deeply first to MST objects as much as possible
+    const snapshot: any = {};
+    for (const key in data) {
+      snapshot[key] = merge(data[key]);
+    }
+
+    // GQL object
+    if (__typename) {
+      const typeDef = store.getTypeDef(__typename);
+      let instance = id !== undefined && resolveIdentifier(typeDef, store, id);
+
       return instance;
     } else {
       return snapshot;

@@ -42,6 +42,7 @@ export class Connection {
           resolve(normalizedResponse);
         })
         .catch(error => {
+          console.log('error ', error);
           reject(error);
         });
     });

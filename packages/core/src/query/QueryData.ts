@@ -4,6 +4,7 @@ export default class QueryData {
   operation: string;
   payload: any;
   queryKey: string;
+  append?: boolean;
   fetchPolicy: IFetchPolicy = 'cache-and-network';
   normalizer?: any;
   constructor(
@@ -11,19 +12,22 @@ export default class QueryData {
     operation: string,
     payload: any,
     fetchPolicy?: IFetchPolicy,
-    normalizer?: any
+    normalizer?: any,
+    queryKey?: any,
+    append?: boolean
   ) {
     this.collection = collection;
     this.operation = operation;
     this.payload = payload;
-    this.queryKey = getHash(this);
+    this.queryKey = queryKey ?? getHash(this);
     this.fetchPolicy = fetchPolicy || this.fetchPolicy;
     this.normalizer = normalizer;
+    this.append = append;
   }
 }
 
 // Reference from react-query
-const getHash = (val: any) => {
+export const getHash = (val: any) => {
   return JSON.stringify(val, (_, val) =>
     isPlainObject(val)
       ? Object.keys(val)
