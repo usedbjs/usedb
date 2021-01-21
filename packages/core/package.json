@@ -26,7 +26,6 @@
     "dependencies": {
       "lodash": "^4.17.20",
       "mobx": "^6.0.4",
-      "mobx-react-lite": "^3.1.6",
       "mobx-state-tree": "^5.0.0",
       "mobx-state-tree-normalizr": "^1.0.10",
       "tslib": "^2.0.0"
