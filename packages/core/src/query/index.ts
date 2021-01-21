@@ -71,8 +71,13 @@ const actionProxy = new Proxy(
   {},
   {
     get: (_obj, actionName: string) => {
-      return ({ params, fetchPolicy }: IActionParams): QueryData => {
-        return new QueryData('actions', actionName, params, fetchPolicy);
+      return (config?: IActionParams): QueryData => {
+        return new QueryData(
+          'actions',
+          actionName,
+          config?.params,
+          config?.fetchPolicy
+        );
       };
     },
   }
