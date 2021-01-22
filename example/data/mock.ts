@@ -1,28 +1,28 @@
 export const users = [
   {
     id: 1,
-    username: 'nishan',
+    username: 'joe',
   },
   {
     id: 2,
-    username: 'chirag',
+    username: 'jane',
   },
 ];
 
 export const posts = [
-  { id: 1, text: 'hello world', user: users[0], isLiked: true },
-  { id: 2, text: 'use useDB', user: users[0], isLiked: false },
-  { id: 3, text: 'useDB is cool', user: users[1], isLiked: false },
-  { id: 4, text: 'nishan sucks', user: users[1], isLiked: true },
-  { id: 5, text: 'hello world', user: users[1], isLiked: false },
-  { id: 6, text: 'use useDB', user: users[1], isLiked: false },
-  { id: 7, text: 'useDB is cool', user: users[1], isLiked: false },
-  { id: 8, text: 'nishan sucks', user: users[1], isLiked: false },
-  { id: 9, text: 'nishan sucks', user: users[1], isLiked: false },
-  { id: 10, text: 'nishan sucks', user: users[1], isLiked: false },
-  { id: 11, text: 'nishan sucks', user: users[1], isLiked: false },
-  { id: 12, text: 'nishan sucks', user: users[1], isLiked: false },
-  { id: 13, text: 'nishan sucks', user: users[1], isLiked: false },
+  { id: 1, text: 'hello earth', user: users[0], isLiked: true },
+  { id: 2, text: 'hello mars', user: users[0], isLiked: false },
+  { id: 3, text: 'hello jupiter', user: users[1], isLiked: false },
+  { id: 4, text: 'hello pluto', user: users[1], isLiked: true },
+  { id: 5, text: 'hello sun', user: users[1], isLiked: false },
+  { id: 6, text: 'hello moon', user: users[1], isLiked: false },
+  { id: 7, text: 'hello venus', user: users[1], isLiked: false },
+  { id: 8, text: 'hello saturn', user: users[1], isLiked: false },
+  { id: 9, text: 'hello from react', user: users[1], isLiked: false },
+  { id: 10, text: 'hello from vue', user: users[1], isLiked: false },
+  { id: 11, text: 'hello from svelte', user: users[1], isLiked: false },
+  { id: 12, text: 'hello from x', user: users[1], isLiked: false },
+  { id: 13, text: 'hello from y', user: users[1], isLiked: false },
 ];
 
 export const comments = [

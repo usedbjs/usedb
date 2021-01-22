@@ -7,13 +7,13 @@ export const UpdateProfile = observer(() => {
   const { data: user, error, status } = useDBv2(
     db.User.findOne({ where: { id: 1 } })
   );
-  const { setQuery } = useDBv2();
+  const { setQuery, status: updateUserStatus } = useDBv2();
 
   const updateUserName = () => {
     setQuery(
       db.User.update({
         where: { id: 1 },
-        data: { username: 'nishan_updated' },
+        data: { username: 'nishan' },
       })
     );
   };
@@ -25,7 +25,12 @@ export const UpdateProfile = observer(() => {
   return (
     <div>
       <h1>Hello {user?.username}</h1>
-      <button onClick={updateUserName}>Change username </button>
+      <button
+        disabled={updateUserStatus === 'loading'}
+        onClick={updateUserName}
+      >
+        Change username{' '}
+      </button>
     </div>
   );
 });

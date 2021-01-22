@@ -1,17 +1,7 @@
-//@ts-nocheck
 import * as React from 'react';
-import { QueryData, Connection, getHash, Query } from '@usedb/core';
-import { refetchCallbacks } from '../utils';
+import { QueryData, Connection, Query } from '@usedb/core';
 import { UseDBReactContext } from '../context';
-import {
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useReducer,
-  useRef,
-} from 'react';
-import { fetchReducer } from './reducers';
+import { useContext } from 'react';
 
 export function useDBv2(queryData?: QueryData) {
   const {
@@ -20,23 +10,20 @@ export function useDBv2(queryData?: QueryData) {
     connection: Connection;
   } = useContext(UseDBReactContext);
 
-  const [query, setQuery] = React.useState<Query<DATA> | undefined>(() => {
+  const [query, setQuery] = React.useState(() => {
     if (!queryData) return undefined;
-    return new Query(connection, queryData, {});
+    return new Query(connection, queryData);
   });
 
-  const setQueryHelper = React.useCallback(
-    (newQuery: QueryLike<STORE, DATA>) => {
-      setQuery(new Query(connection, newQuery, {}));
-    },
-    []
-  );
+  const setQueryHelper = React.useCallback((newQuery: QueryData) => {
+    setQuery(new Query(connection, newQuery));
+  }, []);
 
-  // if new query or variables are passed in, replace the query!
+  // if new query or variables are passed in, refetch!
   React.useEffect(() => {
-    if (!queryData || typeof queryData === 'function') return; // ignore changes to initializer func
+    if (!queryData) return;
     setQueryHelper(queryData);
-  }, [queryData && JSON.stringify(queryData.payload)]); // TODO: use a decent deep equal
+  }, [queryData && queryData.queryKey]);
 
   return {
     status: query ? query.status : 'idle',

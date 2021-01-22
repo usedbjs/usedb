@@ -27,7 +27,7 @@ export interface QueryOptions {
 export class Query<T = unknown> implements PromiseLike<T> {
   status: 'success' | 'error' | 'loading' | 'idle' = 'idle';
   error: any = undefined;
-  response: any = undefined;
+  __response: any = undefined;
 
   public query: QueryData;
   private connection: Connection;
@@ -36,16 +36,12 @@ export class Query<T = unknown> implements PromiseLike<T> {
   private queryKey: string;
   private normalizer: any;
 
-  constructor(
-    connection: Connection,
-    query: QueryData,
-    public options: QueryOptions = {}
-  ) {
+  constructor(connection: Connection, query: QueryData) {
     makeObservable(this, {
       status: observable,
       data: computed,
       error: observable,
-      response: observable,
+      __response: observable,
     });
 
     this.query = query;
@@ -54,13 +50,11 @@ export class Query<T = unknown> implements PromiseLike<T> {
 
     this.normalizer = normalizeResponseGenerator(this.store);
 
-    let fetchPolicy = options.fetchPolicy || 'cache-and-network';
-
-    this.fetchPolicy = fetchPolicy;
-
     const inCache = false;
 
-    switch (this.fetchPolicy) {
+    let fetchPolicy = this.query.fetchPolicy;
+
+    switch (fetchPolicy) {
       case 'no-cache':
       case 'network-only':
         this.fetchResults();
@@ -97,7 +91,7 @@ export class Query<T = unknown> implements PromiseLike<T> {
       if (this.store.queryCache.has(this.query.queryKey)) {
         this.store.queryCache.delete(this.query.queryKey);
       }
-      this.response = undefined;
+      this.__response = undefined;
     });
   };
 
@@ -117,7 +111,7 @@ export class Query<T = unknown> implements PromiseLike<T> {
     if (this.store.queryCache.has(this.query.queryKey)) {
       deflatedResponse = this.store.queryCache.get(this.query.queryKey);
     } else {
-      deflatedResponse = this.response;
+      deflatedResponse = this.__response;
     }
 
     return this.store.denormalize(deflatedResponse);
@@ -165,7 +159,7 @@ export class Query<T = unknown> implements PromiseLike<T> {
           // Put deflated data to the cache
           this.store.__cacheResponse(this.query.queryKey, updatedResponse);
         } else {
-          this.response = updatedResponse;
+          this.__response = updatedResponse;
         }
       }),
       action((error: any) => {
