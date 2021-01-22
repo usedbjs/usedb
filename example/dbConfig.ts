@@ -36,5 +36,5 @@ const dbModel = createModel({
 export const db = dbModel.create();
 
 onSnapshot(db, snapshot => {
-  console.log({ snapshot });
+  console.log('CACHE SNAPSHOT :: ', snapshot);
 });

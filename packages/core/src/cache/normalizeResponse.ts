@@ -132,5 +132,25 @@ export function normalizeResponseGenerator(db) {
     return res;
   };
 
-  return normalizeResponse;
+  const normalizeFromArray = (inputs, model) => {
+    let normalizedRes = [];
+    if (!Array.isArray(inputs) || !Array.isArray(model)) {
+      throw new TypeError('Expect both input and model to be array types');
+    }
+
+    inputs.forEach(input => {
+      const normalizedData = normalizeResponse(input, model[0]);
+      normalizedRes.push(normalizedData);
+    });
+
+    return normalizedRes;
+  };
+
+  const normalize = (input, model) => {
+    return Array.isArray(input)
+      ? normalizeFromArray(input, [model])
+      : normalizeResponse(input, model);
+  };
+
+  return normalize;
 }

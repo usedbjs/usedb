@@ -4,36 +4,72 @@ import { useDBv2 } from '@usedb/react';
 import { observer } from 'mobx-react';
 import { db as cacheDB } from '../../dbConfig';
 
-// 1. Pagination types
+// Pagination
 // 1. Cursor
 // 2. Skip/Take
 
 export const PostList = observer(() => {
-  const [cursor, setCursor] = React.useState();
-  const { data, status } = useDBv2(
-    db.actions.getPosts({
-      queryKey: 'posts',
-      params: { cursor },
-    }),
-    { fetchPolicy: 'cache-and-network' }
+  const { data, status, error, setQuery } = useDBv2(
+    db.Post.findMany({
+      where: {
+        user: { id: 1 },
+      },
+      cursor: {
+        id: undefined,
+      },
+      take: 5,
+    })
   );
 
-  const loadMore = () => {
-    setCursor(data.response.pagination.cursor);
+  const refetch = () => {
+    setQuery(
+      db.Post.findMany({
+        where: {
+          user: { id: 1 },
+        },
+        cursor: {
+          id: undefined,
+        },
+        take: 5,
+      })
+    );
   };
 
-  const isLoadingMore = data && data.pages.length > 0 && status === 'loading';
+  const loadMore = () => {
+    // setCursor(data.pagination.cursor.id);
+    setQuery(
+      db.Post.findMany({
+        where: {
+          user: { id: 1 },
+        },
+        cursor: {
+          id: data.pagination.cursor.id,
+        },
+        take: 5,
+      })
+    );
+  };
+
+  const isLoadingMore =
+    status === 'loading' && data && data.pagination.cursor.id !== undefined;
 
   if (status === 'loading' && !isLoadingMore) {
     return <div>Loading posts...</div>;
   }
 
-  if (data) {
-    const pages = data.pages;
-
+  if (data && data.data.length === 0) {
     return (
       <div>
-        {pages.map((p: any) => {
+        No posts found. Please write one and refetch this API.{' '}
+        <button onClick={refetch}>Refetch</button>
+      </div>
+    );
+  }
+
+  if (data) {
+    return (
+      <div>
+        {data.data.map((p: any) => {
           return (
             <div key={p.id}>
               {p.text} by{' '}
@@ -46,12 +82,19 @@ export const PostList = observer(() => {
         {isLoadingMore ? (
           <div>loading more...</div>
         ) : (
-          <button onClick={loadMore}>Load more</button>
+          <>
+            <button disabled={data.pagination.last} onClick={loadMore}>
+              Load more
+            </button>
+          </>
         )}
+        <div>
+          Refresh. Optimistic updates on creation/deletion not supported yet
+          <button onClick={refetch}>Refetch</button>
+        </div>
       </div>
     );
   }
-
   return null;
 });
 
@@ -63,27 +106,27 @@ const PostLike = observer(({ post }: any) => {
       return;
     }
     setQuery(
-      db.actions.toggleLikePost({
-        params: { id: post.id },
-      }),
-      { fetchPolicy: 'no-cache' }
+      db.Post.update({
+        data: { isLiked: !post.isLiked },
+        where: { id: post.id },
+      })
     );
   };
 
   React.useEffect(() => {
-    if (status === 'loading') {
-      cacheDB._save('Post', {
-        ...post,
-        isLiked: !post.isLiked,
-      });
-    } else if (status === 'error') {
-      cacheDB._save('Post', {
-        ...post,
-        isLiked: prevVal.current,
-      });
-    } else if (status === 'success') {
-      prevVal.current = post.isLiked;
-    }
+    // if (status === 'loading') {
+    //   cacheDB._save('Post', {
+    //     ...post,
+    //     isLiked: !post.isLiked,
+    //   });
+    // } else if (status === 'error') {
+    //   cacheDB._save('Post', {
+    //     ...post,
+    //     isLiked: prevVal.current,
+    //   });
+    // } else if (status === 'success') {
+    //   prevVal.current = post.isLiked;
+    // }
   }, [status]);
 
   return (
@@ -103,13 +146,13 @@ export const DeletePostButton = observer(function DeletePost({ post }: any) {
   };
 
   React.useEffect(() => {
-    if (status === 'loading') {
-      cacheDB.runInAction(() => {
-        const currentCache = cacheDB.queryCache.get('posts');
-        const pages = currentCache.pages.filter(d => d.id !== post.id);
-        cacheDB.queryCache.set('posts', { ...currentCache, pages });
-      });
-    }
+    // if (status === 'loading') {
+    //   cacheDB.runInAction(() => {
+    //     const currentCache = cacheDB.queryCache.get('posts');
+    //     const pages = currentCache.pages.filter(d => d.id !== post.id);
+    //     cacheDB.queryCache.set('posts', { ...currentCache, pages });
+    //   });
+    // }
   }, [status]);
 
   return (

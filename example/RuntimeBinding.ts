@@ -1,37 +1,13 @@
 import { QueryData, Binding } from '@usedb/core';
+import { filter, findIndex, isEmpty } from 'lodash';
 import { posts, users } from './data/mock';
 const artificialDelay = (fn: any) => setTimeout(fn, 1000);
 
-const getPosts = ({ cursor }) => {
-  const findIndex = posts.findIndex(p => p.id === cursor);
-  const nextCursor = posts[findIndex + 1].id;
-  return {
-    pagination: {
-      cursor: nextCursor + 1,
-    },
-    data: posts.slice(findIndex + 1, findIndex + 1 + 2),
-  };
-};
-
-const createPost = ({ text }) => {
-  const newPost = {
-    id: posts.length,
-    text,
-    isLiked: false,
-    user: users[0],
-  };
-  posts.unshift(newPost);
-  return newPost;
-};
-
-const toggleLikePost = ({ id }) => {
-  const post = posts.find(p => p.id === id);
-  post?.isLiked = !post?.isLiked;
-  return post;
-};
-
 export class RuntimeBinding implements Binding {
-  db: any = [];
+  db: any = {
+    User: users,
+  };
+
   getAllCollections(): Promise<any> {
     return new Promise(async (resolve, reject) => {
       try {
@@ -67,29 +43,93 @@ export class RuntimeBinding implements Binding {
   private async processQuery(query: QueryData): Promise<any> {
     const { collection, operation, payload = {} } = query;
     let returnValue: any;
+    console.log('QUERY :: ', query);
     switch (operation) {
-      case 'getPosts':
-        return getPosts({ cursor: payload.cursor });
+      case 'create': {
+        returnValue = this.handleCreate(collection, payload);
+        break;
+      }
+      case 'findMany': {
+        if (payload.hasOwnProperty('where')) {
+          returnValue = filter(this.db[collection], payload.where);
+          const cursor = payload.cursor.id;
+          const { take } = payload;
+          const index = returnValue.findIndex(r => r.id === cursor);
+          returnValue = returnValue.slice(index + 1, index + 1 + take);
 
-      case 'createPost':
-        return createPost(payload);
+          const nextCursor = this.db[collection][index + take]?.id;
 
-      case 'toggleLikePost':
-        return toggleLikePost(payload);
+          returnValue = {
+            data: returnValue,
+            pagination: {
+              cursor: {
+                id: nextCursor,
+              },
+              first: cursor === undefined,
+              last: nextCursor === undefined,
+            },
+          };
+        } else {
+          returnValue = this.db[collection];
+        }
+        break;
+      }
 
-      case 'delete':
+      case 'findOne': {
+        returnValue = users[0];
+        break;
+      }
+
+      case 'update': {
+        if (payload.hasOwnProperty('where')) {
+          let index = findIndex(this.db[collection], payload.where);
+          if (index !== -1 && payload.hasOwnProperty('data')) {
+            for (let childData in payload.data) {
+              this.db[collection][index][childData] = payload.data[childData];
+            }
+            returnValue = this.db[collection][index];
+          }
+        }
+        break;
+      }
+
+      case 'delete': {
+        if (payload.hasOwnProperty('where')) {
+          let index = findIndex(this.db[collection], payload.where);
+          if (index !== -1) {
+            returnValue = this.db[collection][index];
+            this.db[collection].splice(index, 1);
+          }
+        }
         return { success: true };
-
-      case 'findOne':
-        return users.find(d => payload.where.id === d.id);
-
-      case 'update':
-        const user = users.find(d => d.id === payload.where.id);
-        user?.username = payload.data.username;
-        return user;
+      }
       default:
         break;
     }
-    return { meta: {}, data: returnValue };
+
+    console.log('BINDING RESPONSE ::   ', returnValue);
+
+    return returnValue;
+  }
+
+  handleCreate(collection, { data }) {
+    if (!this.db[collection]) {
+      this.db[collection] = [];
+    }
+    let returnValue;
+    switch (collection) {
+      case 'Post': {
+        returnValue = {
+          id: this.db[collection].length,
+          text: data.text,
+          isLiked: false,
+          user: users[0],
+        };
+
+        this.db[collection].unshift(returnValue);
+      }
+    }
+
+    return returnValue;
   }
 }

@@ -3,6 +3,7 @@ import { action, observable, makeObservable, computed } from 'mobx';
 import { normalizeResponseGenerator } from '../cache';
 import { Connection } from '../connection';
 import QueryData from './QueryData';
+import { types } from 'mobx-state-tree';
 import { FetchPolicy, QueryOptions } from './types';
 
 export type CaseHandlers<T, R> = {
@@ -162,6 +163,7 @@ export class Query<T = unknown> implements PromiseLike<T> {
         this.status = 'success';
         this.error = false;
         let model;
+        const isPaginatedData = data && data.pagination;
 
         if (this.query.collection === 'actions') {
           model = this.store.actions[this.query.operation];
@@ -172,8 +174,16 @@ export class Query<T = unknown> implements PromiseLike<T> {
         let updatedResponse;
 
         if (model && this.query.operation.indexOf('delete') === -1) {
+          model = isPaginatedData
+            ? types.model('PaginationModel', {
+                pagination: types.frozen(),
+                data: types.array(model),
+              })
+            : model;
+
           // 1. Add id, __typename to response.
           const res = this.normalizer(data, model);
+
           // 2. Populate/Update the root store
           this.store.merge(res);
 
@@ -184,29 +194,25 @@ export class Query<T = unknown> implements PromiseLike<T> {
         }
 
         if (this.fetchPolicy !== 'no-cache') {
-          // Query is paginated, update the existing cache
-          if (
-            this.query.payload &&
-            this.query.payload.hasOwnProperty('cursor')
-          ) {
-            // First page
-            if (this.query.payload.cursor === undefined) {
-              updatedResponse = {
-                response: updatedResponse,
-                pages: [...updatedResponse.data],
-              };
+          if (isPaginatedData) {
+            let prevData = this.store.queryCache.get(this.query.queryKey) ?? {
+              data: [],
+            };
+            // Reset cache on refetch
+            if (
+              this.query.payload.cursor &&
+              this.query.payload.cursor.id === undefined
+            ) {
+              prevData = { data: [] };
             }
-            // next page
-            else {
-              const prevCache = this.store.get(this.query);
-              updatedResponse = {
-                response: updatedResponse,
-                pages: [...prevCache.pages, ...updatedResponse.data],
-              };
-            }
-            // Put deflated data to the cache
+            updatedResponse = {
+              pagination: updatedResponse.pagination,
+              data: prevData.data.concat(updatedResponse.data),
+            };
+            this.store.__cacheResponse(this.query.queryKey, updatedResponse);
+          } else {
+            this.store.__cacheResponse(this.query.queryKey, updatedResponse);
           }
-          this.store.__cacheResponse(this.query.queryKey, updatedResponse);
         } else {
           this.__response = updatedResponse;
         }
