@@ -60,8 +60,8 @@ export const PostList = observer(() => {
   if (data && data.data.length === 0) {
     return (
       <div>
-        No posts found. Please write one and refetch this API.{' '}
-        <button onClick={refetch}>Refetch</button>
+        No posts found. Please write one and refetch this API. Optimistic
+        updates are not enabled. <button onClick={refetch}>Refetch</button>
       </div>
     );
   }

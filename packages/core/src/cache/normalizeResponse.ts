@@ -59,7 +59,9 @@ export function normalizeResponseGenerator(db) {
     const processedEntity = {};
 
     model.forAllProps((name, childType) => {
-      processedEntity[name] = normalizeFromAnyType(input[name], childType);
+      if (input[name] !== undefined) {
+        processedEntity[name] = normalizeFromAnyType(input[name], childType);
+      }
     });
     return {
       ...processedEntity,
@@ -96,8 +98,10 @@ export function normalizeResponseGenerator(db) {
         const tempResult = {};
         //@ts-ignore
         type.forAllProps((name, childType) => {
-          let val = normalizeFromAnyType(input[name], childType);
-          tempResult[name] = val;
+          if (input[name] !== undefined) {
+            let val = normalizeFromAnyType(input[name], childType);
+            tempResult[name] = val;
+          }
         });
         return tempResult;
       }
@@ -123,7 +127,9 @@ export function normalizeResponseGenerator(db) {
       }
 
       model.forAllProps((name, childType) => {
-        res[name] = normalizeFromAnyType(input[name], childType);
+        if (input[name] !== undefined) {
+          res[name] = normalizeFromAnyType(input[name], childType);
+        }
       });
     } else {
       res = normalizeFromAnyType(input, model);
