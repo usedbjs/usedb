@@ -13,7 +13,7 @@ const connection = new Connection({ bind: new RuntimeBinding(), db });
 const App = () => {
   return (
     <Provider connection={connection}>
-      <UpdateProfile />
+      {/* <UpdateProfile /> */}
       <CreatePost />
       <PostList />
     </Provider>

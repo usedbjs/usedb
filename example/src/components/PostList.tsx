@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { db } from '@usedb/core';
-import { useDBv2 } from '@usedb/react';
+import { useDB } from '@usedb/react';
 import { observer } from 'mobx-react';
 import { db as cacheDB } from '../../dbConfig';
 
@@ -9,7 +9,7 @@ import { db as cacheDB } from '../../dbConfig';
 // 2. Skip/Take
 
 export const PostList = observer(() => {
-  const { data, status, error, setQuery } = useDBv2(
+  const { data, status, error, setQuery } = useDB(
     db.Post.findMany({
       where: {
         user: { id: 1 },
@@ -99,7 +99,7 @@ export const PostList = observer(() => {
 });
 
 const PostLike = observer(({ post }: any) => {
-  const { setQuery, status, data } = useDBv2();
+  const { setQuery, status, data } = useDB();
   const prevVal = React.useRef(post.isLiked);
   const handleToggleLike = () => {
     if (status === 'loading') {
@@ -139,7 +139,7 @@ const PostLike = observer(({ post }: any) => {
 });
 
 export const DeletePostButton = observer(function DeletePost({ post }: any) {
-  const { data, status, setQuery } = useDBv2();
+  const { data, status, setQuery } = useDB();
 
   const handleDeletePost = () => {
     setQuery(db.Post.delete({ where: { id: post.id } }));

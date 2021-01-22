@@ -1,13 +1,13 @@
-import { useDBv2 } from '@usedb/react';
+import { useDB } from '@usedb/react';
 import { db } from '@usedb/core';
 import * as React from 'react';
 import { observer } from 'mobx-react-lite';
 
 export const UpdateProfile = observer(() => {
-  const { data: user, error, status } = useDBv2(
+  const { data: user, error, status } = useDB(
     db.User.findOne({ where: { id: 1 } })
   );
-  const { setQuery, status: updateUserStatus } = useDBv2();
+  const { setQuery, status: updateUserStatus } = useDB();
 
   const updateUserName = () => {
     setQuery(

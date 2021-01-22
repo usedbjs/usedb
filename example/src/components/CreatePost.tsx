@@ -1,11 +1,11 @@
 import { db } from '@usedb/core';
-import { useDBv2 } from '@usedb/react';
+import { useDB } from '@usedb/react';
 import { observer } from 'mobx-react-lite';
 import * as React from 'react';
 
 export const CreatePost = observer(function CreatePost() {
   const [value, setValue] = React.useState('');
-  const { status, setQuery } = useDBv2();
+  const { status, setQuery } = useDB();
 
   const handleCreatePost = e => {
     e.preventDefault();
