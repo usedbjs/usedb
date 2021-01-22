@@ -121,7 +121,11 @@ export function normalizeResponseGenerator(db) {
   const normalizeResponse = (input: any, model: IAnyModelType) => {
     let res = {};
     if (isModelType(model)) {
-      if (db.isRootType(model.name)) {
+      if (
+        db.isRootType(model.name) &&
+        input &&
+        input[model.identifierAttribute] !== undefined
+      ) {
         res.id = input[model.identifierAttribute];
         res.__typename = model.name;
       }
