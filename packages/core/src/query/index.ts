@@ -80,9 +80,7 @@ const actionProxy = new Proxy(
           actionName,
           config?.params,
           config?.fetchPolicy,
-          config?.normalizer,
-          config?.queryKey,
-          config?.append
+          config?.queryKey
         );
       };
     },

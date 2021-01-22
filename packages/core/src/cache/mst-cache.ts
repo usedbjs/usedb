@@ -47,37 +47,22 @@ type ICreateDBParams = {
   actions: Array<IAnyModelType>;
 };
 
-type IModelKeyValue = {
-  [key: string]: IAnyModelType;
-};
-
-type IModelMaps = {
+type IModelStoreObject = {
   // Because Type 'IAnyType' is not assignable to type 'IAnyModelType'.ts(2322)
   [key: string]: IMapType<any>;
 };
 
-let modelKeyValue: IModelKeyValue = {};
-
 const createModel = ({ models, actions }: ICreateModelParams) => {
-  let modelMaps: IModelMaps = {};
-  let actionKeyValue: IModelMaps = {};
+  let modelStoreObject: IModelStoreObject = {};
 
-  models.forEach(model => {
-    modelKeyValue[model.name] = model;
-    modelMaps[model.name] = types.optional(types.map(model), {});
-  });
-
-  actions.forEach(action => {
-    if (isModelType(action)) {
-      actionKeyValue[action.name] = action;
-    } else {
-      actionKeyValue[action.name] = action.type;
-    }
+  Object.keys(models).forEach(key => {
+    models[key].name = key;
+    modelStoreObject[key] = types.optional(types.map(models[key]), {});
   });
 
   const DBModel = types
     .model(DB_NAME, {
-      ...modelMaps,
+      ...modelStoreObject,
       [QUERY_CACHE_NAME]: types.optional(types.map(types.frozen()), {}),
     })
     .volatile((self): {
@@ -94,15 +79,14 @@ const createModel = ({ models, actions }: ICreateModelParams) => {
         ssr,
         __promises: new Map(),
         __afterInit: false,
+        models,
+        actions,
       };
     })
     .views(self => {
       return {
-        denormalize(key) {
-          const cache = self[QUERY_CACHE_NAME].get(key);
-          const dd = denormalizeHelper(self, cache);
-          return dd;
-          // return mergeHelper(self, data);
+        denormalize(data) {
+          return denormalizeHelper(self, data);
         },
       };
     })
@@ -118,7 +102,7 @@ const createModel = ({ models, actions }: ICreateModelParams) => {
           self[QUERY_CACHE_NAME].set(key, response);
         },
         getTypeDef(typeName: string) {
-          return modelKeyValue[typeName];
+          return self.models[typeName];
         },
         merge(data) {
           return mergeHelper(self, data);
@@ -127,7 +111,7 @@ const createModel = ({ models, actions }: ICreateModelParams) => {
           return deflateHelper(self, data);
         },
         isRootType(typename) {
-          if (modelKeyValue[typename]) return true;
+          if (self.models[typename]) return true;
         },
         has(query: QueryData) {
           return self[QUERY_CACHE_NAME].has(query.queryKey);
@@ -135,30 +119,8 @@ const createModel = ({ models, actions }: ICreateModelParams) => {
         get(query: QueryData) {
           return self[QUERY_CACHE_NAME].get(query.queryKey);
         },
-        put(query: QueryData, payload: any) {
-          let model;
-          if (query.collection === 'actions') {
-            model = actionKeyValue[query.operation];
-            // Need a model to insert into the store
-          } else {
-            model = modelKeyValue[query.collection];
-          }
-
-          if (model) {
-            const res = normalizeResponse(payload, model);
-            const hydratedRes = self.merge(res);
-            if (query.fetchPolicy === 'no-cache') {
-              return hydratedRes;
-            } else {
-              self[QUERY_CACHE_NAME].set(query.queryKey, self.deflate(res));
-              return self.get(query);
-            }
-          } else {
-            return payload;
-          }
-        },
         _save(name: string, data: any) {
-          const model = modelKeyValue[name];
+          const model = self.models[name];
           const identifierAttribute = model.identifierAttribute;
 
           const prevData = self[name].get(data[identifierAttribute]);
@@ -167,67 +129,6 @@ const createModel = ({ models, actions }: ICreateModelParams) => {
           } else {
             self[name].set(data[identifierAttribute], data);
           }
-        },
-        _populate({ data, model }: { data: any; model: any }) {
-          const { entities, result } = normalizeResponse(data, model);
-          for (let key in entities) {
-            const modelData = entities[key];
-
-            for (let id in modelData) {
-              //@ts-ignore
-              self._save(key, modelData[id]);
-            }
-          }
-
-          let normalizedResponse: any;
-          if (Array.isArray(result)) {
-            normalizedResponse = result.map((id: any) => {
-              return RuntimeReference.create({ id, __type: model.name });
-            });
-          } else {
-            normalizedResponse = RuntimeReference.create({
-              id: result,
-              __type: model.name,
-            });
-          }
-
-          return normalizedResponse;
-        },
-        update(name: string, payload: any) {
-          const recorder = recordPatches(self);
-          //@ts-ignore
-          const model = modelKeyValue[name];
-          self._populate({
-            data: { id: payload.where.id, ...payload.data },
-            model,
-          });
-          recorder.stop();
-          return function undo() {
-            recorder.undo();
-          };
-        },
-        create(name: string, payload: any) {
-          const recorder = recordPatches(self);
-          //@ts-ignore
-          const model = modelKeyValue[name];
-          self._populate({
-            data: payload.data,
-            model,
-          });
-          recorder.stop();
-          return function undo() {
-            recorder.undo();
-          };
-        },
-        delete(name: string, payload: any) {
-          const recorder = recordPatches(self);
-          //@ts-ignore
-          const model = modelKeyValue[name];
-          destroy(self[name].get(payload.where.id));
-          recorder.stop();
-          return function undo() {
-            recorder.undo();
-          };
         },
         runInAction(callback: any) {
           callback();

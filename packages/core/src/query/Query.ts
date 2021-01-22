@@ -1,4 +1,6 @@
+//@ts-nocheck
 import { action, observable, makeObservable, computed } from 'mobx';
+import { normalizeResponseGenerator } from '../cache';
 import { Connection } from '../connection';
 import QueryData from './QueryData';
 
@@ -20,7 +22,7 @@ export interface QueryOptions {
   noSsr?: boolean;
 }
 
-const isServer: boolean = typeof window === 'undefined';
+// const isServer: boolean = typeof window === 'undefined';
 
 export class Query<T = unknown> implements PromiseLike<T> {
   status: 'success' | 'error' | 'loading' | 'idle' = 'idle';
@@ -32,7 +34,7 @@ export class Query<T = unknown> implements PromiseLike<T> {
   public promise!: Promise<T>;
   private fetchPolicy: FetchPolicy;
   private queryKey: string;
-  private store: any;
+  private normalizer: any;
 
   constructor(
     connection: Connection,
@@ -49,24 +51,15 @@ export class Query<T = unknown> implements PromiseLike<T> {
     this.query = query;
     this.queryKey = this.query.queryKey;
     this.connection = connection;
-    this.store = this.connection.cache;
+
+    this.normalizer = normalizeResponseGenerator(this.store);
 
     let fetchPolicy = options.fetchPolicy || 'cache-and-network';
-    if (
-      this.store.ssr &&
-      !this.options.noSsr &&
-      (isServer || !this.store.__afterInit)
-    ) {
-      fetchPolicy = 'cache-first';
-    }
+
     this.fetchPolicy = fetchPolicy;
 
-    if (this.store.ssr && this.options.noSsr && isServer) {
-      this.promise = Promise.resolve() as any;
-      return;
-    }
+    const inCache = false;
 
-    const inCache = false || this.store.queryCache.has(this.queryKey);
     switch (this.fetchPolicy) {
       case 'no-cache':
       case 'network-only':
@@ -95,10 +88,14 @@ export class Query<T = unknown> implements PromiseLike<T> {
     }
   }
 
+  get store() {
+    return this.connection.cache;
+  }
+
   clearData = (): void => {
     action(() => {
-      if (this.connection.cache.has(this.query)) {
-        this.connection.cache.forget(this.query);
+      if (this.store.queryCache.has(this.query.queryKey)) {
+        this.store.queryCache.delete(this.query.queryKey);
       }
       this.response = undefined;
     });
@@ -116,12 +113,14 @@ export class Query<T = unknown> implements PromiseLike<T> {
   };
 
   get data() {
+    let deflatedResponse;
     if (this.store.queryCache.has(this.query.queryKey)) {
-      //@ts-ignore
-      return this.store.denormalize(this.query?.queryKey);
+      deflatedResponse = this.store.queryCache.get(this.query.queryKey);
+    } else {
+      deflatedResponse = this.response;
     }
 
-    return this.response;
+    return this.store.denormalize(deflatedResponse);
   }
 
   private fetchResults() {
@@ -140,9 +139,33 @@ export class Query<T = unknown> implements PromiseLike<T> {
       action((data: any) => {
         this.status = 'success';
         this.error = false;
-        const returnedData = this.store.put(this.query, data);
-        if (!this.store.has(this.query)) {
-          this.response = returnedData;
+        let model;
+
+        if (this.query.collection === 'actions') {
+          model = this.store.actions[this.query.operation];
+        } else {
+          model = this.store.models[this.query.collection];
+        }
+
+        let updatedResponse;
+
+        if (model) {
+          // 1. Add id, __typename to response.
+          const res = this.normalizer(data, model);
+          // 2. Populate/Update the root store
+          this.store.merge(res);
+
+          const deflatedResponse = this.store.deflate(res);
+          updatedResponse = deflatedResponse;
+        } else {
+          updatedResponse = data;
+        }
+
+        if (this.query.fetchPolicy !== 'no-cache') {
+          // Put deflated data to the cache
+          this.store.__cacheResponse(this.query.queryKey, updatedResponse);
+        } else {
+          this.response = updatedResponse;
         }
       }),
       action((error: any) => {

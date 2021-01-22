@@ -54,7 +54,7 @@ export const PostList = observer(() => {
 });
 
 const PostLike = observer(({ post }: any) => {
-  const { setQuery, status } = useDBv2();
+  const { setQuery, status, data } = useDBv2();
   const prevVal = React.useRef(post.isLiked);
   const handleToggleLike = () => {
     if (status === 'loading') {

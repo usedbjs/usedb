@@ -4,7 +4,9 @@ import * as React from 'react';
 import { observer } from 'mobx-react-lite';
 
 export const UpdateProfile = observer(() => {
-  const { data: user, error } = useDBv2(db.User.findOne({ where: { id: 1 } }));
+  const { data: user, error, status } = useDBv2(
+    db.User.findOne({ where: { id: 1 } })
+  );
   const { setQuery } = useDBv2();
 
   const updateUserName = () => {
@@ -15,6 +17,10 @@ export const UpdateProfile = observer(() => {
       })
     );
   };
+
+  if (status === 'loading') {
+    return <div>loading profile...</div>;
+  }
 
   return (
     <div>
