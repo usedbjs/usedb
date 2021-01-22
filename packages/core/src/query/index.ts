@@ -1,4 +1,5 @@
-import QueryData, { IFetchPolicy, getHash } from './QueryData';
+import { FetchPolicy } from './types';
+import QueryData, { getHash } from './QueryData';
 export * from './types';
 export { Query } from './Query';
 
@@ -66,10 +67,8 @@ export const db: any = new Proxy(
 
 type IActionParams = {
   params: any;
-  fetchPolicy: IFetchPolicy;
-  normalizer?: any;
+  fetchPolicy: FetchPolicy;
   queryKey?: string;
-  append?: boolean;
 };
 
 const actionProxy = new Proxy(

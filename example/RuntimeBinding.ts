@@ -2,13 +2,20 @@ import { QueryData, Binding } from '@usedb/core';
 import { posts, users } from './data/mock';
 const artificialDelay = (fn: any) => setTimeout(fn, 1000);
 
-const getPosts = ({ limit, offset }) => {
-  return posts.slice(offset, offset + limit);
+const getPosts = ({ cursor }) => {
+  const findIndex = posts.findIndex(p => p.id === cursor);
+  const nextCursor = posts[findIndex + 1].id;
+  return {
+    pagination: {
+      cursor: nextCursor + 1,
+    },
+    data: posts.slice(findIndex + 1, findIndex + 1 + 2),
+  };
 };
 
 const createPost = ({ text }) => {
   const newPost = {
-    id: Math.random(),
+    id: posts.length,
     text,
     isLiked: false,
     user: users[0],
@@ -62,7 +69,7 @@ export class RuntimeBinding implements Binding {
     let returnValue: any;
     switch (operation) {
       case 'getPosts':
-        return getPosts({ offset: payload.offset, limit: payload.limit });
+        return getPosts({ cursor: payload.cursor });
 
       case 'createPost':
         return createPost(payload);
@@ -70,7 +77,7 @@ export class RuntimeBinding implements Binding {
       case 'toggleLikePost':
         return toggleLikePost(payload);
 
-      case 'deletePost':
+      case 'delete':
         return { success: true };
 
       case 'findOne':

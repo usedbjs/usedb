@@ -19,15 +19,21 @@ export default class QueryData {
 
 // Reference from react-query
 export const getHash = (val: any) => {
-  return JSON.stringify(val, (_, val) =>
-    isPlainObject(val)
-      ? Object.keys(val)
+  const { cursor, ...rest } = val.payload;
+  const hashValue = {
+    ...val,
+    payload: rest,
+  };
+
+  return JSON.stringify(hashValue, (_, hashValue) =>
+    isPlainObject(hashValue)
+      ? Object.keys(hashValue)
           .sort()
           .reduce((result, key) => {
-            result[key] = val[key];
+            result[key] = hashValue[key];
             return result;
           }, {} as any)
-      : val
+      : hashValue
   );
 };
 

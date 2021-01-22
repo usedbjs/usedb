@@ -10,10 +10,7 @@ export function useDBv2(queryData?: QueryData, config?: QueryOptions) {
     connection: Connection;
   } = useContext(UseDBReactContext);
 
-  const [query, setQuery] = React.useState(() => {
-    if (!queryData) return undefined;
-    return new Query(connection, queryData, config);
-  });
+  const [query, setQuery] = React.useState<any>();
 
   const setQueryHelper = React.useCallback(
     (newQuery: QueryData, config?: QueryOptions) => {
@@ -26,7 +23,7 @@ export function useDBv2(queryData?: QueryData, config?: QueryOptions) {
   React.useEffect(() => {
     if (!queryData) return;
     setQueryHelper(queryData, config);
-  }, [queryData && queryData.queryKey]);
+  }, [queryData && JSON.stringify(queryData)]);
 
   return {
     status: query ? query.status : 'idle',

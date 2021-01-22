@@ -35,9 +35,9 @@ export const CreatePost = observer(function CreatePost() {
         const currentCache = cacheDB.queryCache.get('posts');
         const newCache = [
           { id: dummyNewId.current, __typename: 'Post' },
-          ...currentCache,
+          ...currentCache.pages,
         ];
-        cacheDB.queryCache.set('posts', newCache);
+        cacheDB.queryCache.set('posts', { ...currentCache, pages: newCache });
       });
     }
     // Mutate cache
@@ -49,12 +49,12 @@ export const CreatePost = observer(function CreatePost() {
         const currentCache = cacheDB.queryCache.get('posts');
         const newCache = [
           { id: data.id, __typename: 'Post' },
-          ...currentCache,
+          ...currentCache.pages,
         ].filter(d => d.id !== dummyNewId.current);
 
         cacheDB.Post.delete(dummyNewId.current);
 
-        cacheDB.queryCache.set('posts', newCache);
+        cacheDB.queryCache.set('posts', { ...currentCache, pages: newCache });
       });
     }
   }, [status]);

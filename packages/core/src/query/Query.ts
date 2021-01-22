@@ -171,7 +171,7 @@ export class Query<T = unknown> implements PromiseLike<T> {
 
         let updatedResponse;
 
-        if (model) {
+        if (model && this.query.operation.indexOf('delete') === -1) {
           // 1. Add id, __typename to response.
           const res = this.normalizer(data, model);
           // 2. Populate/Update the root store
@@ -184,7 +184,28 @@ export class Query<T = unknown> implements PromiseLike<T> {
         }
 
         if (this.fetchPolicy !== 'no-cache') {
-          // Put deflated data to the cache
+          // Query is paginated, update the existing cache
+          if (
+            this.query.payload &&
+            this.query.payload.hasOwnProperty('cursor')
+          ) {
+            // First page
+            if (this.query.payload.cursor === undefined) {
+              updatedResponse = {
+                response: updatedResponse,
+                pages: [...updatedResponse.data],
+              };
+            }
+            // next page
+            else {
+              const prevCache = this.store.get(this.query);
+              updatedResponse = {
+                response: updatedResponse,
+                pages: [...prevCache.pages, ...updatedResponse.data],
+              };
+            }
+            // Put deflated data to the cache
+          }
           this.store.__cacheResponse(this.query.queryKey, updatedResponse);
         } else {
           this.__response = updatedResponse;

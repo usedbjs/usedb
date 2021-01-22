@@ -21,7 +21,10 @@ const Comment = types.model({
 const models = { User, Post, Comment };
 
 export const actions = {
-  getPosts: types.array(types.safeReference(Post)),
+  getPosts: types.model({
+    pagination: types.frozen(),
+    data: types.array(types.safeReference(Post)),
+  }),
   createPost: types.safeReference(Post),
 };
 
