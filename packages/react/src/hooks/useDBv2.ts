@@ -1,9 +1,9 @@
 import * as React from 'react';
-import { QueryData, Connection, Query } from '@usedb/core';
+import { QueryData, Connection, Query, QueryOptions } from '@usedb/core';
 import { UseDBReactContext } from '../context';
 import { useContext } from 'react';
 
-export function useDBv2(queryData?: QueryData) {
+export function useDBv2(queryData?: QueryData, config?: QueryOptions) {
   const {
     connection,
   }: {
@@ -12,17 +12,20 @@ export function useDBv2(queryData?: QueryData) {
 
   const [query, setQuery] = React.useState(() => {
     if (!queryData) return undefined;
-    return new Query(connection, queryData);
+    return new Query(connection, queryData, config);
   });
 
-  const setQueryHelper = React.useCallback((newQuery: QueryData) => {
-    setQuery(new Query(connection, newQuery));
-  }, []);
+  const setQueryHelper = React.useCallback(
+    (newQuery: QueryData, config?: QueryOptions) => {
+      setQuery(new Query(connection, newQuery, config));
+    },
+    []
+  );
 
   // if new query or variables are passed in, refetch!
   React.useEffect(() => {
     if (!queryData) return;
-    setQueryHelper(queryData);
+    setQueryHelper(queryData, config);
   }, [queryData && queryData.queryKey]);
 
   return {

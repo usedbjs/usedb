@@ -1,10 +1,4 @@
-export {
-  db,
-  RootQueryBuilder,
-  QueryBuilder,
-  QueryData,
-  getHash,
-} from './query';
+export * from './query';
 export { Connection } from './connection';
 export {
   Binding,
@@ -14,4 +8,3 @@ export {
 } from './binding';
 export * from './cache';
 export * from 'mobx-state-tree';
-export { Query } from './query/Query';

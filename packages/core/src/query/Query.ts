@@ -3,6 +3,7 @@ import { action, observable, makeObservable, computed } from 'mobx';
 import { normalizeResponseGenerator } from '../cache';
 import { Connection } from '../connection';
 import QueryData from './QueryData';
+import { FetchPolicy, QueryOptions } from './types';
 
 export type CaseHandlers<T, R> = {
   loading(): R;
@@ -10,17 +11,40 @@ export type CaseHandlers<T, R> = {
   data(data: T): R;
 };
 
-export type FetchPolicy =
-  | 'cache-first' // Use cache if available, avoid network request if possible
-  | 'cache-only' // Use cache if available, or error
-  | 'cache-and-network' // Use cache, but still send request and update cache in the background
-  | 'network-only' // Skip cache, but cache the result
-  | 'no-cache'; // Skip cache, and don't cache the response either
+export const GETTER_QUERIES = ['findOne', 'findMany', 'count'];
+export const SETTER_QUERIES = [
+  'update',
+  'updateMany',
+  'create',
+  'delete',
+  'deleteMany',
+];
 
-export interface QueryOptions {
-  fetchPolicy?: FetchPolicy;
-  noSsr?: boolean;
-}
+const getFetchPolicy = (
+  query: QueryData,
+  config?: QueryOptions
+): FetchPolicy => {
+  let fetchPolicy;
+
+  // default policies
+  if (GETTER_QUERIES.includes(query.operation)) {
+    fetchPolicy = 'cache-and-network';
+  } else if (SETTER_QUERIES.includes(query.operation)) {
+    fetchPolicy = 'no-cache';
+  }
+
+  // override default policies
+  fetchPolicy = config?.fetchPolicy ? config?.fetchPolicy : fetchPolicy;
+
+  if (!fetchPolicy) {
+    fetchPolicy = 'network-only';
+    console.error(
+      `No cache policy found for a query with key ${query.queryKey}, using network-only by default `
+    );
+  }
+
+  return fetchPolicy;
+};
 
 // const isServer: boolean = typeof window === 'undefined';
 
@@ -36,7 +60,11 @@ export class Query<T = unknown> implements PromiseLike<T> {
   private queryKey: string;
   private normalizer: any;
 
-  constructor(connection: Connection, query: QueryData) {
+  constructor(
+    connection: Connection,
+    query: QueryData,
+    options?: QueryOptions
+  ) {
     makeObservable(this, {
       status: observable,
       data: computed,
@@ -52,9 +80,9 @@ export class Query<T = unknown> implements PromiseLike<T> {
 
     const inCache = false;
 
-    let fetchPolicy = this.query.fetchPolicy;
+    this.fetchPolicy = getFetchPolicy(query, options);
 
-    switch (fetchPolicy) {
+    switch (this.fetchPolicy) {
       case 'no-cache':
       case 'network-only':
         this.fetchResults();
@@ -155,7 +183,7 @@ export class Query<T = unknown> implements PromiseLike<T> {
           updatedResponse = data;
         }
 
-        if (this.query.fetchPolicy !== 'no-cache') {
+        if (this.fetchPolicy !== 'no-cache') {
           // Put deflated data to the cache
           this.store.__cacheResponse(this.query.queryKey, updatedResponse);
         } else {

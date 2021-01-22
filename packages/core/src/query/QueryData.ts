@@ -1,22 +1,18 @@
-export type IFetchPolicy = 'no-cache' | 'cache-and-network';
 export default class QueryData {
   collection: string;
   operation: string;
   payload: any;
   queryKey: string;
-  fetchPolicy: IFetchPolicy = 'cache-and-network';
 
   constructor(
     collection: string,
     operation: string,
     payload: any,
-    fetchPolicy?: IFetchPolicy,
     queryKey?: any
   ) {
     this.collection = collection;
     this.operation = operation;
     this.payload = payload;
-    this.fetchPolicy = fetchPolicy || this.fetchPolicy;
     this.queryKey = queryKey ?? getHash(this);
   }
 }

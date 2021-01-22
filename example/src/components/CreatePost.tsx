@@ -14,8 +14,8 @@ export const CreatePost = observer(function CreatePost() {
     setQuery(
       db.actions.createPost({
         params: { text: value },
-        fetchPolicy: 'no-cache',
-      })
+      }),
+      { fetchPolicy: 'no-cache' }
     );
   };
 

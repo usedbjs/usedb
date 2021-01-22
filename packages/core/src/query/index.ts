@@ -1,4 +1,6 @@
 import QueryData, { IFetchPolicy, getHash } from './QueryData';
+export * from './types';
+export { Query } from './Query';
 
 export { QueryData, getHash };
 export interface RootQueryBuilder {
@@ -16,36 +18,36 @@ export class QueryBuilder {
     this.collection = collection;
   }
   create(obj: { data: KeyPair; select?: Array<string> }): QueryData {
-    return new QueryData(this.collection, 'create', obj, 'no-cache');
+    return new QueryData(this.collection, 'create', obj);
   }
   findOne(obj: { where: KeyPair; select?: Array<string> }): QueryData {
-    return new QueryData(this.collection, 'findOne', obj, 'cache-and-network');
+    return new QueryData(this.collection, 'findOne', obj);
   }
   findMany(obj: { where: KeyPair; select?: Array<string> }): QueryData {
-    return new QueryData(this.collection, 'findMany', obj, 'cache-and-network');
+    return new QueryData(this.collection, 'findMany', obj);
   }
   update(obj: {
     where: KeyPair;
     data: KeyPair;
     select?: Array<string>;
   }): QueryData {
-    return new QueryData(this.collection, 'update', obj, 'no-cache');
+    return new QueryData(this.collection, 'update', obj);
   }
   updateMany(obj: {
     where: KeyPair;
     data: KeyPair;
     select?: Array<string>;
   }): QueryData {
-    return new QueryData(this.collection, 'updateMany', obj, 'no-cache');
+    return new QueryData(this.collection, 'updateMany', obj);
   }
   delete(obj: { where: KeyPair; select?: Array<string> }): QueryData {
-    return new QueryData(this.collection, 'delete', obj, 'no-cache');
+    return new QueryData(this.collection, 'delete', obj);
   }
   deleteMany(obj: { where: KeyPair }): QueryData {
-    return new QueryData(this.collection, 'deleteMany', obj, 'no-cache');
+    return new QueryData(this.collection, 'deleteMany', obj);
   }
   count(obj: { where: KeyPair }): QueryData {
-    return new QueryData(this.collection, 'count', obj, 'cache-and-network');
+    return new QueryData(this.collection, 'count', obj);
   }
 }
 
@@ -79,7 +81,6 @@ const actionProxy = new Proxy(
           'actions',
           actionName,
           config?.params,
-          config?.fetchPolicy,
           config?.queryKey
         );
       };

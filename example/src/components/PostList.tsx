@@ -18,7 +18,8 @@ export const PostList = observer(() => {
       queryKey: 'posts',
       append: true,
       params: { limit: 3, offset },
-    })
+    }),
+    { fetchPolicy: 'cache-and-network' }
   );
 
   const loadMore = () => {
@@ -63,8 +64,8 @@ const PostLike = observer(({ post }: any) => {
     setQuery(
       db.actions.toggleLikePost({
         params: { id: post.id },
-        fetchPolicy: 'no-cache',
-      })
+      }),
+      { fetchPolicy: 'no-cache' }
     );
   };
 
@@ -98,11 +99,7 @@ export const DeletePostButton = observer(function DeletePost({ post }: any) {
   const { data, status, setQuery } = useDBv2();
 
   const handleDeletePost = () => {
-    setQuery(
-      db.actions.deletePost({
-        fetchPolicy: 'no-cache',
-      })
-    );
+    setQuery(db.actions.deletePost(), { fetchPolicy: 'no-cache' });
   };
 
   React.useEffect(() => {
