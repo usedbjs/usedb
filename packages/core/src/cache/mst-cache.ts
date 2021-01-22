@@ -8,6 +8,7 @@ import {
   destroy,
   getRoot,
   isModelType,
+  getEnv,
 } from 'mobx-state-tree';
 import normalize from 'mobx-state-tree-normalizr';
 import { Cache } from './index';
@@ -79,6 +80,22 @@ const createModel = ({ models, actions }: ICreateModelParams) => {
       ...modelMaps,
       [QUERY_CACHE_NAME]: types.optional(types.map(types.frozen()), {}),
     })
+    .volatile((self): {
+      ssr: boolean;
+      __promises: Map<string, Promise<unknown>>;
+      __afterInit: boolean;
+    } => {
+      const {
+        ssr = false,
+      }: {
+        ssr: boolean;
+      } = getEnv(self);
+      return {
+        ssr,
+        __promises: new Map(),
+        __afterInit: false,
+      };
+    })
     .views(self => {
       return {
         denormalize(key) {
@@ -92,6 +109,14 @@ const createModel = ({ models, actions }: ICreateModelParams) => {
     .actions(self => {
       let normalizeResponse = normalizeResponseGenerator(self);
       return {
+        __pushPromise(promise: Promise<{}>, queryKey: string) {
+          self.__promises.set(queryKey, promise);
+          const onSettled = () => self.__promises.delete(queryKey);
+          promise.then(onSettled, onSettled);
+        },
+        __cacheResponse(key: string, response: any) {
+          self[QUERY_CACHE_NAME].set(key, response);
+        },
         getTypeDef(typeName: string) {
           return modelKeyValue[typeName];
         },

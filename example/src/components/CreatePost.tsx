@@ -1,10 +1,5 @@
-import { db, recordPatches } from '@usedb/core';
-import {
-  refetchCallbacks,
-  refetchMap,
-  refetchQueries,
-  useDB,
-} from '@usedb/react';
+import { db } from '@usedb/core';
+import { useDBv2 } from '@usedb/react';
 import { observer } from 'mobx-react-lite';
 import * as React from 'react';
 import { db as cacheDB } from '../../dbConfig';
@@ -13,7 +8,7 @@ export const CreatePost = observer(function CreatePost() {
   const dummyNewId = React.useRef(Math.random());
 
   const [value, setValue] = React.useState('');
-  const { data, error, status, setQuery } = useDB();
+  const { data, error, status, setQuery } = useDBv2();
 
   const handleCreatePost = () => {
     setQuery(
@@ -47,7 +42,6 @@ export const CreatePost = observer(function CreatePost() {
     }
     // Mutate cache
     if (status === 'success') {
-      console.log('hydrate into the cache ', cacheDB.queryCache);
       // cacheDB._save("queryCache", {})
       // refetchMap.get('getPosts')();
       // refetchCallbacks.get()

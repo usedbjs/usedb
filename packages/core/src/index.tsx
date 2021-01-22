@@ -14,3 +14,4 @@ export {
 } from './binding';
 export * from './cache';
 export * from 'mobx-state-tree';
+export { Query } from './query/Query';

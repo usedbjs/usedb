@@ -8,14 +8,14 @@
     "build": "parcel build index.html"
   },
   "dependencies": {
-    "lodash.pick": "^4.4.0",
-    "mobx-react-lite": "^3.1.6",
-    "react-app-polyfill": "^1.0.0",
-    "react": "^16.13.1",
-    "react-dom": "^16.13.1",
     "@types/react": "^16.9.43",
-    "@types/react-dom": "^16.9.8"
-    
+    "@types/react-dom": "^16.9.8",
+    "lodash.pick": "^4.4.0",
+    "mobx-react": "^7.0.5",
+    "mobx-react-lite": "^3.1.6",
+    "react": "^16.13.1",
+    "react-app-polyfill": "^1.0.0",
+    "react-dom": "^16.13.1"
   },
   "alias": {
     "@usedb/react": "../packages/react",

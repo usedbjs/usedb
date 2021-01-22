@@ -1,8 +1,8 @@
 import * as React from 'react';
 import { db } from '@usedb/core';
 import { usePaginatedQuery } from '../utils/usePaginatedQuery';
-import { useDB } from '@usedb/react';
-import { observer } from 'mobx-react-lite';
+import { useDBv2 } from '@usedb/react';
+import { observer } from 'mobx-react';
 import { db as cacheDB } from '../../dbConfig';
 
 // pageParams: {}
@@ -13,13 +13,13 @@ import { db as cacheDB } from '../../dbConfig';
 
 export const PostList = observer(() => {
   const [offset, setOffset] = React.useState(0);
-  const query = db.actions.getPosts({
-    queryKey: 'posts',
-    append: true,
-    params: { limit: 3, offset },
-  });
-
-  const { data: posts, error, status } = useDB(query);
+  const { data: posts, status } = useDBv2(
+    db.actions.getPosts({
+      queryKey: 'posts',
+      append: true,
+      params: { limit: 3, offset },
+    })
+  );
 
   const loadMore = () => {
     setOffset(posts.length);
@@ -37,6 +37,7 @@ export const PostList = observer(() => {
             <div key={p.id}>
               {p.text} by {p.user.username}
               <PostLike post={p} />
+              <DeletePostButton post={p} />
             </div>
           );
         })}
@@ -53,7 +54,7 @@ export const PostList = observer(() => {
 });
 
 const PostLike = observer(({ post }: any) => {
-  const { setQuery, status } = useDB();
+  const { setQuery, status } = useDBv2();
   const prevVal = React.useRef(post.isLiked);
   const handleToggleLike = () => {
     if (status === 'loading') {
@@ -88,14 +89,13 @@ const PostLike = observer(({ post }: any) => {
       <button onClick={handleToggleLike}>
         {post.isLiked ? 'Liked' : 'Like'}
       </button>
-      <DeletePostButton post={post} />
     </div>
   );
 });
 
 export const DeletePostButton = observer(function DeletePost({ post }: any) {
   const [value, setValue] = React.useState('');
-  const { data, status, setQuery } = useDB();
+  const { data, status, setQuery } = useDBv2();
 
   const handleDeletePost = () => {
     setQuery(
@@ -106,7 +106,6 @@ export const DeletePostButton = observer(function DeletePost({ post }: any) {
   };
 
   React.useEffect(() => {
-    console.log('data ', data);
     if (status === 'loading') {
       cacheDB.runInAction(() => {
         const currentCache = cacheDB.queryCache.get('posts');
@@ -116,7 +115,6 @@ export const DeletePostButton = observer(function DeletePost({ post }: any) {
     }
     // Mutate cache
     if (status === 'success') {
-      console.log('hydrate into the cache ', cacheDB.queryCache);
       cacheDB.runInAction(() => {
         const currentCache = cacheDB.queryCache.get('posts');
         const newCache = currentCache.filter(d => d.id !== post.id);

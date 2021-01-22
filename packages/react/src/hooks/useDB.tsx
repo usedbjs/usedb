@@ -54,7 +54,6 @@ export function useDB(queryData?: QueryData) {
   // Used for getter queries
   const revalidate = useCallback(() => {
     if (queryData) {
-      // console.log('query data in revalidate ', queryData);
       dispatchOnMounted({ type: 'LOADING' });
       connection
         .query(queryData)

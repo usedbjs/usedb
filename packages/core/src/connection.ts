@@ -38,8 +38,7 @@ export class Connection {
       this.bind
         .perform(query)
         .then(resp => {
-          const normalizedResponse = this.cache.put(query, resp);
-          resolve(normalizedResponse);
+          resolve(resp);
         })
         .catch(error => {
           console.log('error ', error);
