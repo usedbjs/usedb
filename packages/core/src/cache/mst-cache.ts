@@ -1,123 +1,99 @@
-//@ts-nocheck
 import {
-  IAnyModelType,
-  IMapType,
   types,
-  recordPatches,
-  getSnapshot,
-  destroy,
-  getRoot,
-  isModelType,
-  getEnv,
+  IAnyModelType,
+  IOptionalIType,
+  IMapType,
+  ValidOptionalValues,
 } from 'mobx-state-tree';
-import normalize from 'mobx-state-tree-normalizr';
 import { Cache } from './index';
 import { QueryData } from '../query';
 import { exerimentalMSTViews } from './experimental-mst-views';
 import { deflateHelper, mergeHelper, denormalizeHelper } from './deflateHelper';
-import { normalizeResponseGenerator } from './normalizeResponse';
-
-export const RuntimeReference = types.model('RuntimeReference', {
-  __type: types.string,
-  id: types.frozen(),
-});
-
-const RuntimeReferenceResolver = types.safeReference(RuntimeReference, {
-  set: (value, parent: any) => {
-    return value.__type + '_' + value.id;
-  },
-  get(identifier /* string */, parent: any /*Store*/) {
-    const rootStore = getRoot(parent);
-    const [type, id] = identifier.split('_');
-    return rootStore[type].get(id) || null;
-  },
-});
-
-const QueryCacheType = types.model('QueryCache', {
-  data: types.optional(types.map(types.frozen()), {}),
-});
 
 const QUERY_CACHE_NAME = 'queryCache';
 const DB_NAME = 'MSTCache';
 
 export type DBInstance = Cache;
 
-type ICreateDBParams = {
-  models: Array<IAnyModelType>;
-  actions: Array<IAnyModelType>;
-};
+const CacheModel = types
+  .model(DB_NAME, {
+    [QUERY_CACHE_NAME]: types.optional(types.map(types.frozen()), {}),
+  })
+  .volatile((): {
+    __promises: Map<string, Promise<unknown>>;
+  } => {
+    return {
+      __promises: new Map(),
+    };
+  })
+  .views(self => {
+    return {
+      denormalize(data: unknown) {
+        return denormalizeHelper(self, data);
+      },
+    };
+  })
+  .actions(self => {
+    return {
+      __pushPromise(promise: Promise<{}>, queryKey: string) {
+        self.__promises.set(queryKey, promise);
+        const onSettled = () => self.__promises.delete(queryKey);
+        promise.then(onSettled, onSettled);
+      },
+      __cacheResponse(key: string, response: unknown) {
+        self[QUERY_CACHE_NAME].set(key, response);
+      },
+      merge(data: unknown) {
+        return mergeHelper(self, data);
+      },
+      deflate(data: unknown) {
+        return deflateHelper(self, data);
+      },
+      has(query: QueryData) {
+        return self[QUERY_CACHE_NAME].has(query.queryKey);
+      },
+      get(query: QueryData) {
+        return self[QUERY_CACHE_NAME].get(query.queryKey);
+      },
+      runInAction(callback: any) {
+        callback();
+      },
+    };
+  })
+  .views(exerimentalMSTViews);
 
-type IModelStoreObject = {
-  // Because Type 'IAnyType' is not assignable to type 'IAnyModelType'.ts(2322)
-  [key: string]: IMapType<any>;
+type ICreateModelParams = {
+  models: { [key: string]: IAnyModelType };
+  actions: { [key: string]: IAnyModelType };
 };
 
 const createModel = ({ models, actions }: ICreateModelParams) => {
-  let modelStoreObject: IModelStoreObject = {};
+  let modelStoreObject: {
+    [key: string]: IOptionalIType<IMapType<IAnyModelType>, ValidOptionalValues>;
+  } = {};
 
   Object.keys(models).forEach(key => {
     models[key].name = key;
     modelStoreObject[key] = types.optional(types.map(models[key]), {});
   });
 
-  const DBModel = types
-    .model(DB_NAME, {
-      ...modelStoreObject,
-      [QUERY_CACHE_NAME]: types.optional(types.map(types.frozen()), {}),
-    })
-    .volatile((self): {
-      ssr: boolean;
-      __promises: Map<string, Promise<unknown>>;
-      __afterInit: boolean;
-    } => {
-      const {
-        ssr = false,
-      }: {
-        ssr: boolean;
-      } = getEnv(self);
+  const StoreModel = CacheModel.props({
+    ...modelStoreObject,
+  })
+    .volatile(() => {
       return {
-        ssr,
-        __promises: new Map(),
-        __afterInit: false,
         models,
         actions,
       };
     })
-    .views(self => {
-      return {
-        denormalize(data) {
-          return denormalizeHelper(self, data);
-        },
-      };
-    })
     .actions(self => {
-      let normalizeResponse = normalizeResponseGenerator(self);
       return {
-        __pushPromise(promise: Promise<{}>, queryKey: string) {
-          self.__promises.set(queryKey, promise);
-          const onSettled = () => self.__promises.delete(queryKey);
-          promise.then(onSettled, onSettled);
-        },
-        __cacheResponse(key: string, response: any) {
-          self[QUERY_CACHE_NAME].set(key, response);
-        },
         getTypeDef(typeName: string) {
           return self.models[typeName];
         },
-        merge(data) {
-          return mergeHelper(self, data);
-        },
-        deflate(data) {
-          return deflateHelper(self, data);
-        },
-        isRootType(typename) {
+        isRootType(typename: string) {
           if (self.models[typename]) return true;
-        },
-        has(query: QueryData) {
-          return self[QUERY_CACHE_NAME].has(query.queryKey);
-        },
-        get(query: QueryData) {
-          return self[QUERY_CACHE_NAME].get(query.queryKey);
+          return false;
         },
         _save(name: string, data: any) {
           const model = self.models[name];
@@ -130,14 +106,10 @@ const createModel = ({ models, actions }: ICreateModelParams) => {
             self[name].set(data[identifierAttribute], data);
           }
         },
-        runInAction(callback: any) {
-          callback();
-        },
       };
-    })
-    .views(exerimentalMSTViews);
+    });
 
-  return DBModel;
+  return StoreModel;
 };
 
 export { createModel };
