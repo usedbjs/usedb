@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { db } from '@usedb/core';
-import { useDB } from '@usedb/react';
+import { refetchByQueryKey, useDB } from '@usedb/react';
 import { observer } from 'mobx-react';
 import { db as cacheDB } from '../../dbConfig';
 
@@ -10,15 +10,18 @@ import { db as cacheDB } from '../../dbConfig';
 
 export const PostList = observer(() => {
   const { data, status, error, setQuery } = useDB(
-    db.Post.findMany({
-      where: {
-        user: { id: 1 },
+    db.Post.findMany(
+      {
+        where: {
+          user: { id: 1 },
+        },
+        cursor: {
+          id: undefined,
+        },
+        take: 5,
       },
-      cursor: {
-        id: undefined,
-      },
-      take: 5,
-    })
+      { queryKey: 'posts' }
+    )
   );
 
   const refetch = () => {
@@ -60,8 +63,7 @@ export const PostList = observer(() => {
   if (data && data.data.length === 0) {
     return (
       <div>
-        No posts found. Please write one and refetch this API. Optimistic
-        updates are not enabled. <button onClick={refetch}>Refetch</button>
+        No posts found. <button onClick={refetch}>Refetch</button>
       </div>
     );
   }
@@ -139,20 +141,24 @@ const PostLike = observer(({ post }: any) => {
 });
 
 export const DeletePostButton = observer(function DeletePost({ post }: any) {
-  const { data, status, setQuery } = useDB();
+  const { status, setQuery } = useDB();
 
   const handleDeletePost = () => {
     setQuery(db.Post.delete({ where: { id: post.id } }));
   };
 
   React.useEffect(() => {
-    // if (status === 'loading') {
-    //   cacheDB.runInAction(() => {
-    //     const currentCache = cacheDB.queryCache.get('posts');
-    //     const pages = currentCache.pages.filter(d => d.id !== post.id);
-    //     cacheDB.queryCache.set('posts', { ...currentCache, pages });
-    //   });
-    // }
+    if (status === 'loading') {
+      cacheDB.runInAction(() => {
+        const currentCache = cacheDB.queryCache.get('posts');
+        const data = currentCache.data.filter(d => d.id !== post.id);
+        cacheDB.queryCache.set('posts', { ...currentCache, data });
+      });
+    }
+
+    if (status === 'success') {
+      refetchByQueryKey('posts');
+    }
   }, [status]);
 
   return (

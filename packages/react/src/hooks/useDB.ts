@@ -2,8 +2,9 @@ import * as React from 'react';
 import { QueryData, Connection, Query, QueryOptions } from '@usedb/core';
 import { UseDBReactContext } from '../context';
 import { useContext } from 'react';
+import { refetchCallbacks } from '../refetchCallbacks';
 
-export function useDBv2(queryData?: QueryData, config?: QueryOptions) {
+export function useDB(queryData?: QueryData, config?: QueryOptions) {
   const {
     connection,
   }: {
@@ -23,6 +24,11 @@ export function useDBv2(queryData?: QueryData, config?: QueryOptions) {
   React.useEffect(() => {
     if (!queryData) return;
     setQueryHelper(queryData, config);
+    const refetch = () => setQueryHelper(queryData, config);
+    refetchCallbacks.set(queryData, refetch);
+    return () => {
+      refetchCallbacks.delete(queryData, refetch);
+    };
   }, [queryData && JSON.stringify(queryData)]);
 
   return {

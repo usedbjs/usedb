@@ -11,6 +11,10 @@ export interface KeyPair {
   [key: string]: any;
 }
 
+type IAdditionalConfig = {
+  queryKey?: string;
+};
+
 export const GETTER_QUERIES = ['findOne', 'findMany', 'count'];
 export const SETTER_QUERIES = ['update', 'updateMany', 'create', 'delete'];
 export class QueryBuilder {
@@ -21,11 +25,17 @@ export class QueryBuilder {
   create(obj: { data: KeyPair; select?: Array<string> }): QueryData {
     return new QueryData(this.collection, 'create', obj);
   }
-  findOne(obj: { where: KeyPair; select?: Array<string> }): QueryData {
-    return new QueryData(this.collection, 'findOne', obj);
+  findOne(
+    obj: { where: KeyPair; select?: Array<string> },
+    config?: IAdditionalConfig
+  ): QueryData {
+    return new QueryData(this.collection, 'findOne', obj, config?.queryKey);
   }
-  findMany(obj: { where: KeyPair; select?: Array<string> }): QueryData {
-    return new QueryData(this.collection, 'findMany', obj);
+  findMany(
+    obj: { where: KeyPair; select?: Array<string> },
+    config?: IAdditionalConfig
+  ): QueryData {
+    return new QueryData(this.collection, 'findMany', obj, config?.queryKey);
   }
   update(obj: {
     where: KeyPair;

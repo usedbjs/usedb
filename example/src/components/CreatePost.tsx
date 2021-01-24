@@ -1,5 +1,5 @@
 import { db } from '@usedb/core';
-import { useDB } from '@usedb/react';
+import { refetchByQueryKey, useDB } from '@usedb/react';
 import { observer } from 'mobx-react-lite';
 import * as React from 'react';
 
@@ -17,6 +17,12 @@ export const CreatePost = observer(function CreatePost() {
       })
     );
   };
+
+  React.useEffect(() => {
+    if (status === 'success') {
+      refetchByQueryKey('posts');
+    }
+  }, [status]);
 
   return (
     <div>
