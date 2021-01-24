@@ -4,7 +4,10 @@ import { UseDBReactContext } from '../context';
 import { useContext } from 'react';
 import { refetchCallbacks } from '../refetchCallbacks';
 
-export function useDB(queryData?: QueryData, config?: QueryOptions) {
+export function useDB<ResponseType>(
+  queryData?: QueryData,
+  config?: QueryOptions
+) {
   const {
     connection,
   }: {
@@ -15,7 +18,7 @@ export function useDB(queryData?: QueryData, config?: QueryOptions) {
 
   const setQueryHelper = React.useCallback(
     (newQuery: QueryData, config?: QueryOptions) => {
-      setQuery(new Query(connection, newQuery, config));
+      setQuery(new Query<ResponseType>(connection, newQuery, config));
     },
     []
   );
@@ -34,7 +37,7 @@ export function useDB(queryData?: QueryData, config?: QueryOptions) {
   return {
     status: query ? query.status : 'idle',
     error: query ? query.error : undefined,
-    data: query ? query.data : undefined,
+    data: (query ? query.data : undefined) as ResponseType,
     query,
     setQuery: setQueryHelper,
   };

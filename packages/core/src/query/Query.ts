@@ -133,7 +133,7 @@ export class Query<T = unknown> implements PromiseLike<T> {
     );
   };
 
-  get data() {
+  get data(): T | undefined {
     let deflatedResponse;
     if (this.store.queryCache.has(this.query.queryKey)) {
       deflatedResponse = this.store.queryCache.get(this.query.queryKey);

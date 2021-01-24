@@ -1,18 +1,18 @@
 import { types, createModel, onSnapshot } from '@usedb/core';
 
-const User = types.model({
+export const User = types.model({
   id: types.identifierNumber,
   username: types.string,
 });
 
-const Post = types.model({
+export const Post = types.model({
   id: types.identifierNumber,
   text: types.string,
   isLiked: types.boolean,
   user: types.safeReference(User),
 });
 
-const Comment = types.model({
+export const Comment = types.model({
   id: types.identifierNumber,
   text: types.string,
   post: types.safeReference(Post),
