@@ -4,20 +4,17 @@ import {
   IOptionalIType,
   IMapType,
   ValidOptionalValues,
+  Instance,
 } from 'mobx-state-tree';
-import { Cache } from './index';
 import { QueryData } from '../query';
-import { exerimentalMSTViews } from './experimental-mst-views';
 import { deflateHelper, mergeHelper, denormalizeHelper } from './deflateHelper';
 
 const QUERY_CACHE_NAME = 'queryCache';
 const DB_NAME = 'MSTCache';
 
-export type DBInstance = Cache;
-
 const CacheModel = types
   .model(DB_NAME, {
-    [QUERY_CACHE_NAME]: types.optional(types.map(types.frozen()), {}),
+    queryCache: types.optional(types.map(types.frozen()), {}),
   })
   .volatile((): {
     __promises: Map<string, Promise<unknown>>;
@@ -59,8 +56,7 @@ const CacheModel = types
         callback();
       },
     };
-  })
-  .views(exerimentalMSTViews);
+  });
 
 type ICreateModelParams = {
   models: { [key: string]: IAnyModelType };
@@ -98,12 +94,18 @@ const createModel = ({ models, actions }: ICreateModelParams) => {
         _save(name: string, data: any) {
           const model = self.models[name];
           const identifierAttribute = model.identifierAttribute;
-
-          const prevData = self[name].get(data[identifierAttribute]);
-          if (prevData) {
-            self[name].set(data[identifierAttribute], { ...prevData, ...data });
+          if (identifierAttribute) {
+            const prevData = self[name].get(data[identifierAttribute]);
+            if (prevData) {
+              self[name].set(data[identifierAttribute], {
+                ...prevData,
+                ...data,
+              });
+            } else {
+              self[name].set(data[identifierAttribute], data);
+            }
           } else {
-            self[name].set(data[identifierAttribute], data);
+            console.error('Model needs an identifier attribute');
           }
         },
       };
@@ -113,3 +115,11 @@ const createModel = ({ models, actions }: ICreateModelParams) => {
 };
 
 export { createModel };
+
+export type DBInstance = Instance<typeof CacheModel>;
+
+export const getPaginationModel = (model: IAnyModelType) =>
+  types.model('PaginationModel', {
+    pagination: types.frozen(),
+    data: types.array(model),
+  });

@@ -1,9 +1,7 @@
-//@ts-nocheck
 import { action, observable, makeObservable, computed } from 'mobx';
-import { normalizeResponseGenerator } from '../cache';
+import { getPaginationModel, normalizeResponseGenerator } from '../cache';
 import { Connection } from '../connection';
 import QueryData from './QueryData';
-import { types } from 'mobx-state-tree';
 import { FetchPolicy, QueryOptions } from './types';
 
 export type CaseHandlers<T, R> = {
@@ -44,7 +42,7 @@ const getFetchPolicy = (
     );
   }
 
-  return fetchPolicy;
+  return fetchPolicy as FetchPolicy;
 };
 
 // const isServer: boolean = typeof window === 'undefined';
@@ -162,24 +160,24 @@ export class Query<T = unknown> implements PromiseLike<T> {
       action((data: any) => {
         this.status = 'success';
         this.error = false;
-        let model;
         const isPaginatedData = data && data.pagination;
+        let model;
 
         if (this.query.collection === 'actions') {
+          //@ts-ignore - action property is added at runtime. Todo - Find a better way than ts-ignore
           model = this.store.actions[this.query.operation];
         } else {
+          //@ts-ignore - models property is added at runtime. Todo - Find a better way than ts-ignore
           model = this.store.models[this.query.collection];
         }
 
         let updatedResponse;
 
-        if (model && this.query.operation.indexOf('delete') === -1) {
-          model = isPaginatedData
-            ? types.model('PaginationModel', {
-                pagination: types.frozen(),
-                data: types.array(model),
-              })
-            : model;
+        // Delete operations should just respond with server response as of now
+        if (this.query.operation.indexOf('delete') !== -1) {
+          updatedResponse = data;
+        } else if (model) {
+          model = isPaginatedData ? getPaginationModel(model) : model;
 
           // 1. Add id, __typename to response.
           const res = this.normalizer(data, model);
@@ -195,20 +193,7 @@ export class Query<T = unknown> implements PromiseLike<T> {
 
         if (this.fetchPolicy !== 'no-cache') {
           if (isPaginatedData) {
-            let prevData = this.store.queryCache.get(this.query.queryKey) ?? {
-              data: [],
-            };
-            // Reset cache on refetch
-            if (
-              this.query.payload.cursor &&
-              this.query.payload.cursor.id === undefined
-            ) {
-              prevData = { data: [] };
-            }
-            updatedResponse = {
-              pagination: updatedResponse.pagination,
-              data: prevData.data.concat(updatedResponse.data),
-            };
+            updatedResponse = this.getPaginationResponse(updatedResponse);
             this.store.__cacheResponse(this.query.queryKey, updatedResponse);
           } else {
             this.store.__cacheResponse(this.query.queryKey, updatedResponse);
@@ -222,6 +207,27 @@ export class Query<T = unknown> implements PromiseLike<T> {
         this.error = error;
       })
     );
+  }
+
+  private getPaginationResponse(normalizedResponse: any) {
+    let prevData = this.store.queryCache.get(this.query.queryKey) ?? {
+      data: [],
+    };
+
+    // If cursor.id is undefined, consider it as a first request.
+    if (
+      this.query.payload.cursor &&
+      this.query.payload.cursor.id === undefined
+    ) {
+      prevData = { data: [] };
+    }
+
+    let response = {
+      pagination: normalizedResponse.pagination,
+      data: prevData.data.concat(normalizedResponse.data),
+    };
+
+    return response;
   }
 
   private useCachedResults() {
@@ -246,10 +252,10 @@ export class Query<T = unknown> implements PromiseLike<T> {
   then(onfulfilled: any, onrejected: any) {
     return this.promise.then(
       d => {
-        this.store.__runInStoreContext(() => onfulfilled(d));
+        this.store.runInAction(() => onfulfilled(d));
       },
       e => {
-        this.store.__runInStoreContext(() => onrejected(e));
+        this.store.runInAction(() => onrejected(e));
       }
     );
   }

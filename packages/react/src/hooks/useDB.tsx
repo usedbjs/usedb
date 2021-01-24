@@ -1,4 +1,3 @@
-//@ts-nocheck
 import { QueryData, Connection, getHash } from '@usedb/core';
 import { refetchCallbacks } from '../utils';
 import { UseDBReactContext } from '../context';

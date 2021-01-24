@@ -1,4 +1,3 @@
-//@ts-nocheck
 import {
   IAnyModelType,
   isReferenceType,
@@ -7,13 +6,14 @@ import {
   isLateType,
   isOptionalType,
   isUnionType,
+  IAnyType,
 } from 'mobx-state-tree';
 
-export function isObject(obj) {
+export function isObject(obj: any) {
   return typeof obj === 'object' && obj !== null && !Array.isArray(obj);
 }
 
-export function isPlainObject(obj) {
+export function isPlainObject(obj: any) {
   let proto = obj;
   while (Object.getPrototypeOf(proto) !== null) {
     proto = Object.getPrototypeOf(proto);
@@ -22,32 +22,34 @@ export function isPlainObject(obj) {
   return Object.getPrototypeOf(obj) === proto;
 }
 
-const ANONYMOUS_MODEL = 'AnonymousModel';
-
-export function normalizeResponseGenerator(db) {
-  function normalizeFromOptionalType(input, type) {
+export function normalizeResponseGenerator(db: any) {
+  function normalizeFromOptionalType(input: any, type: IAnyType) {
     if (!input) {
+      //@ts-ignore
       input = type.getDefaultInstanceOrSnapshot();
     }
+    //@ts-ignore
     return normalizeFromAnyType(input, type._subtype);
   }
 
-  function normalizeFromArrayType(input, type) {
+  function normalizeFromArrayType(input: any, type: IAnyType) {
     if (!input) input = [];
+    //@ts-ignore
     const subType = type._subType;
     const processedEntity: any = [];
-    input.forEach((item, index) => {
+    input.forEach((item: any, index: number) => {
       processedEntity[index] = normalizeFromAnyType(item, subType);
     });
     return processedEntity;
   }
 
-  function normalizeFromReferenceType(input, type) {
+  function normalizeFromReferenceType(input: any, type: IAnyType): any {
+    //@ts-ignore
     const realType = type.targetType;
     return normalizeFromAnyType(input, realType);
   }
 
-  function normalizeFromModel(input, model) {
+  function normalizeFromModel(input: any, model: IAnyModelType) {
     if (!input) {
       return;
     }
@@ -56,13 +58,15 @@ export function normalizeResponseGenerator(db) {
       return input;
     }
 
-    const processedEntity = {};
+    const processedEntity: any = {};
 
-    model.forAllProps((name, childType) => {
-      if (input[name] !== undefined) {
+    //@ts-ignore
+    model.forAllProps((name: any, childType: IAnyType) => {
+      if (!isNil(input[name])) {
         processedEntity[name] = normalizeFromAnyType(input[name], childType);
       }
     });
+
     return {
       ...processedEntity,
       id: getIdentifierValue(processedEntity, model),
@@ -70,35 +74,36 @@ export function normalizeResponseGenerator(db) {
     };
   }
 
-  const getIdentifierValue = (input, model) => {
+  const getIdentifierValue = (input: any, model: IAnyModelType) => {
     const entityType = model.identifierAttribute || 'id';
     return input[entityType];
   };
 
-  function normalizeFromUnionType(input, type) {
+  function normalizeFromUnionType(input: any, type: any): any {
     const realType =
       type.determineType(input, undefined) ||
-      type._types.find(x => isReferenceType(x));
+      type._types.find((x: any) => isReferenceType(x));
 
     return normalizeFromAnyType(input, realType);
   }
 
-  function normalizeFromLateType(input, type) {
+  function normalizeFromLateType(input: any, type: IAnyType): any {
+    //@ts-ignore
     const realType = type.getSubType();
     return normalizeFromAnyType(input, realType);
   }
 
-  function normalizeFromAnyType(input, type) {
+  function normalizeFromAnyType(input: any, type: IAnyType): any {
     if (isLateType(type)) {
       return normalizeFromLateType(input, type);
     } else if (isModelType(type)) {
-      if (db.isRootType(type.name)) {
+      if (db.isRootType((type as IAnyModelType).name)) {
         return normalizeFromModel(input, type);
       } else {
-        const tempResult = {};
+        const tempResult: any = {};
         //@ts-ignore
         type.forAllProps((name, childType) => {
-          if (input[name] !== undefined) {
+          if (!isNil(input[name])) {
             let val = normalizeFromAnyType(input[name], childType);
             tempResult[name] = val;
           }
@@ -119,19 +124,22 @@ export function normalizeResponseGenerator(db) {
   }
 
   const normalizeResponse = (input: any, model: IAnyModelType) => {
-    let res = {};
+    let res: any = {};
+
     if (isModelType(model)) {
       if (
         db.isRootType(model.name) &&
         input &&
+        model.identifierAttribute &&
         input[model.identifierAttribute] !== undefined
       ) {
         res.id = input[model.identifierAttribute];
         res.__typename = model.name;
       }
 
-      model.forAllProps((name, childType) => {
-        if (input[name] !== undefined) {
+      //@ts-ignore
+      model.forAllProps((name: string, childType: IAnyType) => {
+        if (!isNil(input[name])) {
           res[name] = normalizeFromAnyType(input[name], childType);
         }
       });
@@ -142,8 +150,11 @@ export function normalizeResponseGenerator(db) {
     return res;
   };
 
-  const normalizeFromArray = (inputs, model) => {
-    let normalizedRes = [];
+  const normalizeFromArray = <T>(
+    inputs: Array<T>,
+    model: Array<IAnyModelType>
+  ) => {
+    let normalizedRes: Array<T> = [];
     if (!Array.isArray(inputs) || !Array.isArray(model)) {
       throw new TypeError('Expect both input and model to be array types');
     }
@@ -156,7 +167,7 @@ export function normalizeResponseGenerator(db) {
     return normalizedRes;
   };
 
-  const normalize = (input, model) => {
+  const normalize = (input: any, model: IAnyModelType) => {
     return Array.isArray(input)
       ? normalizeFromArray(input, [model])
       : normalizeResponse(input, model);
@@ -164,3 +175,7 @@ export function normalizeResponseGenerator(db) {
 
   return normalize;
 }
+
+const isNil = (val: any) => {
+  return val == null;
+};
