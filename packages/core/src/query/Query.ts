@@ -216,6 +216,7 @@ export class Query<T = unknown> implements PromiseLike<T> {
 
     // If cursor.id is undefined, consider it as a first request.
     if (
+      this.query.payload &&
       this.query.payload.cursor &&
       this.query.payload.cursor.id === undefined
     ) {

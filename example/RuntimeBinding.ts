@@ -1,5 +1,5 @@
 import { QueryData, Binding } from '@usedb/core';
-import { filter, findIndex, isEmpty } from 'lodash';
+import { filter, findIndex } from 'lodash';
 import { posts, users } from './data/mock';
 const artificialDelay = (fn: any) => setTimeout(fn, 1000);
 
@@ -103,6 +103,33 @@ export class RuntimeBinding implements Binding {
         }
         return { success: true };
       }
+
+      case 'getPosts': {
+        const cursor = payload.cursor.id;
+        const { take } = payload;
+        const index = posts.findIndex(r => r.id === cursor);
+        returnValue = posts.slice(index + 1, index + 1 + take);
+
+        const nextCursor = posts[index + take]?.id;
+
+        returnValue = {
+          data: returnValue,
+          pagination: {
+            cursor: {
+              id: nextCursor,
+            },
+            first: cursor === undefined,
+            last: nextCursor === undefined,
+          },
+        };
+        break;
+      }
+
+      case 'createPost': {
+        returnValue = this.handleCreate('Post', payload);
+        break;
+      }
+
       default:
         break;
     }
