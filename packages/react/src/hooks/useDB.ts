@@ -27,12 +27,16 @@ export function useDB<ResponseType>(
   React.useEffect(() => {
     if (!queryData) return;
     setQueryHelper(queryData, config);
-    const refetch = () => setQueryHelper(queryData, config);
+  }, [queryData && JSON.stringify(queryData)]);
+
+  React.useEffect(() => {
+    if (!queryData || !query) return;
+    const refetch = query.refetch;
     refetchCallbacks.set(queryData, refetch);
     return () => {
       refetchCallbacks.delete(queryData, refetch);
     };
-  }, [queryData && JSON.stringify(queryData)]);
+  }, [query]);
 
   return {
     status: query ? query.status : 'idle',

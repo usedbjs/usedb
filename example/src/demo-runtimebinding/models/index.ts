@@ -11,6 +11,7 @@ const models = {
 
 const DBModel = createModel({
   models,
+  actions: {},
 });
 
 export const db = DBModel.create();

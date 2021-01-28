@@ -1,14 +1,14 @@
 import * as React from 'react';
 import { observer } from 'mobx-react-lite';
 import { db } from '@usedb/core';
-import { useDB } from '@usedb/react';
+import { refetchByQueryKey, useDB } from '@usedb/react';
 
 export const PostList = observer(function PostList() {
   const take = 5;
   const [skip, setSkip] = React.useState(0);
 
-  const { data: posts, status, query } = useDB(
-    db.Post.findMany({ skip, take })
+  const { data: posts, status, query } = useDB<any>(
+    db.Post.findMany({ skip, take }, { queryKey: 'posts' })
   );
 
   if (status === 'loading') {
@@ -41,6 +41,148 @@ export const PostList = observer(function PostList() {
   }
 
   return null;
+});
+
+export const PostListCursor = observer(function PostList() {
+  const take = 1;
+  const [cursor, setCursor] = React.useState(undefined);
+
+  const { data: posts, status, query } = useDB<any>(
+    db.Post.findMany({ take, cursor: { id: cursor } }, { queryKey: 'posts' })
+  );
+
+  if (status === 'loading' && !posts) {
+    return <div>loading...</div>;
+  } else if (posts) {
+    const nextCursor = posts.pagination.cursor.id;
+
+    console.log('next cursor ', nextCursor);
+
+    return (
+      <div>
+        <button onClick={query.refetch}>Refetch</button>
+        {posts.data.map(post => {
+          return (
+            <div key={post.id}>
+              {post.caption}
+              <div>
+                <DeletePost postId={post.id}></DeletePost>
+                <UpdatePost post={post}></UpdatePost>
+              </div>
+            </div>
+          );
+        })}
+        <button
+          disabled={!nextCursor || status === 'loading'}
+          onClick={() => setCursor(nextCursor)}
+        >
+          Load more
+        </button>
+      </div>
+    );
+  }
+
+  return null;
+});
+
+export const CreatePost = observer(function CreatePost() {
+  const [value, setValue] = React.useState('');
+  const { status, setQuery } = useDB();
+
+  const handleCreatePost = e => {
+    e.preventDefault();
+    setQuery(
+      db.Post.create({
+        data: { caption: value },
+      })
+    );
+  };
+
+  React.useEffect(() => {
+    if (status === 'success') {
+      refetchByQueryKey('posts');
+    }
+  }, [status]);
+
+  return (
+    <div>
+      <form onSubmit={handleCreatePost}>
+        <input
+          type="text"
+          onChange={e => setValue(e.target.value)}
+          value={value}
+        />
+        <button type="submit" disabled={status === 'loading'}>
+          Create post
+        </button>
+      </form>
+    </div>
+  );
+});
+
+export const DeletePost = observer(function DeletePost({
+  postId,
+}: {
+  postId: string;
+}) {
+  const { status, setQuery } = useDB();
+
+  const handleDeletePost = e => {
+    e.preventDefault();
+    setQuery(db.Post.delete({ where: { id: postId } }));
+  };
+
+  React.useEffect(() => {
+    if (status === 'success') {
+      refetchByQueryKey('posts');
+    }
+  }, [status]);
+
+  return (
+    <button disabled={status === 'loading'} onClick={handleDeletePost}>
+      Delete
+    </button>
+  );
+});
+
+export const UpdatePost = observer(function UpdatePost({ post }: any) {
+  const [value, setValue] = React.useState(post.caption);
+  const [showUpdateForm, setShowUpdateForm] = React.useState(false);
+  const { status, setQuery } = useDB();
+
+  const handleCreatePost = e => {
+    e.preventDefault();
+    setQuery(
+      db.Post.update({
+        data: { caption: value },
+        where: { id: post.id },
+      })
+    );
+
+    setShowUpdateForm(false);
+  };
+
+  return (
+    <div>
+      <button onClick={() => setShowUpdateForm(!showUpdateForm)}>Edit</button>
+      {showUpdateForm ? (
+        <form onSubmit={handleCreatePost}>
+          <input
+            type="text"
+            onChange={e => setValue(e.target.value)}
+            value={value}
+          />
+          <button
+            type="submit"
+            disabled={status === 'loading'}
+            onClick={handleCreatePost}
+          >
+            Update post
+          </button>
+        </form>
+      ) : null}
+    </div>
+  );
 });
 
 const Pagination = ({ skip, take, total, onSkipChange }: any) => {
@@ -85,87 +227,3 @@ const Pagination = ({ skip, take, total, onSkipChange }: any) => {
     </div>
   );
 };
-
-export const CreatePost = observer(function CreatePost() {
-  const [value, setValue] = React.useState('');
-  const { status, setQuery } = useDB();
-
-  const handleCreatePost = e => {
-    e.preventDefault();
-    setQuery(
-      db.Post.create({
-        data: { caption: value },
-      })
-    );
-  };
-
-  return (
-    <div>
-      <form onSubmit={handleCreatePost}>
-        <input
-          type="text"
-          onChange={e => setValue(e.target.value)}
-          value={value}
-        />
-        <button type="submit" disabled={status === 'loading'}>
-          Create post
-        </button>
-      </form>
-    </div>
-  );
-});
-
-export const DeletePost = observer(function DeletePost({
-  postId,
-}: {
-  postId: string;
-}) {
-  const { status, setQuery } = useDB();
-
-  const handleDeletePost = e => {
-    e.preventDefault();
-    setQuery(db.Post.delete({ where: { id: postId } }));
-  };
-
-  return <button onClick={handleDeletePost}>Delete</button>;
-});
-
-export const UpdatePost = observer(function UpdatePost({ post }: any) {
-  const [value, setValue] = React.useState(post.caption);
-  const [showUpdateForm, setShowUpdateForm] = React.useState(false);
-  const { status, setQuery } = useDB();
-
-  const handleCreatePost = e => {
-    e.preventDefault();
-    setQuery(
-      db.Post.update({
-        data: { caption: value },
-        where: { id: post.id },
-      })
-    );
-
-    setShowUpdateForm(false);
-  };
-
-  return (
-    <div>
-      <button onClick={() => setShowUpdateForm(!showUpdateForm)}>Edit</button>
-      {showUpdateForm ? (
-        <form onSubmit={handleCreatePost}>
-          <input
-            type="text"
-            onChange={e => setValue(e.target.value)}
-            value={value}
-          />
-          <button
-            type="submit"
-            disabled={status === 'loading'}
-            onClick={handleCreatePost}
-          >
-            Update post
-          </button>
-        </form>
-      ) : null}
-    </div>
-  );
-});

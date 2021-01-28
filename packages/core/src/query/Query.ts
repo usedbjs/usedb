@@ -123,6 +123,10 @@ export class Query<T = unknown> implements PromiseLike<T> {
   };
 
   refetch = (): Promise<T> => {
+    this.store.runInAction(() => {
+      this.store.queryCache.delete(this.query.queryKey);
+    });
+
     return Promise.resolve().then(
       action(() => {
         if (this.status !== 'loading') {

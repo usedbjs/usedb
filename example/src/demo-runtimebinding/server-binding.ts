@@ -1,7 +1,7 @@
 import { Binding, QueryData } from '@usedb/core';
-const getURL = 'http://e61f353fe494.ngrok.io/api/usedb';
+const getURL = 'http://localhost:3004/api/usedb';
 
-export class MyBinding implements Binding {
+export class ServerBinding implements Binding {
   getAllCollections(): Promise<any> {
     return new Promise(async (resolve, reject) => {
       try {
