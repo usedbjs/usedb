@@ -160,7 +160,7 @@ export class Query<T = unknown> implements PromiseLike<T> {
       action((data: any) => {
         this.status = 'success';
         this.error = false;
-        const isPaginatedData = data && data.pagination;
+        const isPaginatedData = data && data.pagination !== undefined;
         let model;
 
         if (this.query.collection === 'actions') {
@@ -220,6 +220,10 @@ export class Query<T = unknown> implements PromiseLike<T> {
       this.query.payload.cursor &&
       this.query.payload.cursor.id === undefined
     ) {
+      prevData = { data: [] };
+    }
+    // As of now, skip/take should make new page on every request until we figure out more strategies
+    else if (this.query.payload && this.query.payload.skip !== undefined) {
       prevData = { data: [] };
     }
 

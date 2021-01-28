@@ -60,7 +60,7 @@ const CacheModel = types
 
 type ICreateModelParams = {
   models: { [key: string]: IAnyModelType };
-  actions: { [key: string]: IAnyModelType };
+  actions?: { [key: string]: IAnyModelType };
 };
 
 const createModel = ({ models, actions }: ICreateModelParams) => {
