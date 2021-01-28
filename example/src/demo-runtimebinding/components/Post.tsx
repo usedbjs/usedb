@@ -8,9 +8,7 @@ export const PostList = observer(function PostList() {
   const take = 5;
   const [skip, setSkip] = React.useState(0);
 
-  const { data: posts, status, query, setQuery } = useDB<any>(
-    db.Post.findMany({ skip, take }, { queryKey: 'posts' })
-  );
+  const { data: posts, status } = useDB<any>(db.Post.findMany({ skip, take }));
 
   if (status === 'loading' && !posts) {
     return <div>loading...</div>;
@@ -44,7 +42,7 @@ export const PostListCursor = observer(function PostList() {
   const [cursor, setCursor] = React.useState(undefined);
 
   const { data: posts, status } = useDB<any>(
-    db.Post.findMany({ take, cursor: { id: cursor } }, { queryKey: 'posts' })
+    db.Post.findMany({ take, cursor: { id: cursor } })
   );
 
   if (status === 'loading' && !posts) {
