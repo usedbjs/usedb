@@ -35,8 +35,6 @@ const handleCursorPagination = ({
 
   const nextCursor = data[index + take]?.id;
 
-  console.log('next cursor ', nextCursor);
-
   return {
     data: result,
     pagination: {
@@ -104,14 +102,14 @@ export default class RuntimeBinding implements Binding {
       case 'findOne':
         if (payload.hasOwnProperty('where')) {
           let val = filter(this.db[collection], payload.where);
-          returnValue = val.length ? val[0] : undefined;
+          returnValue = val.length ? val[0] : {};
         }
         if (payload.hasOwnProperty('select')) {
           let queryResult: any = {};
           payload.select.forEach((selectOption: string) => {
             queryResult[selectOption] = returnValue[selectOption];
           });
-          returnValue = !isEmpty(queryResult) ? queryResult : undefined;
+          returnValue = !isEmpty(queryResult) ? queryResult : {};
         }
         break;
       case 'findMany': {

@@ -1,32 +1,28 @@
 import * as React from 'react';
 import { observer } from 'mobx-react-lite';
 import { db } from '@usedb/core';
-import { refetchByQueryKey, useDB } from '@usedb/react';
+import { useDB } from '@usedb/react';
+import { Link, useParams } from 'react-router-dom';
 
 export const PostList = observer(function PostList() {
   const take = 5;
   const [skip, setSkip] = React.useState(0);
 
-  const { data: posts, status, query } = useDB<any>(
+  const { data: posts, status, query, setQuery } = useDB<any>(
     db.Post.findMany({ skip, take }, { queryKey: 'posts' })
   );
 
-  if (status === 'loading') {
+  if (status === 'loading' && !posts) {
     return <div>loading...</div>;
   } else if (posts) {
     const total = posts.pagination.total;
 
     return (
       <div>
-        <button onClick={query.refetch}>Refetch</button>
         {posts.data.map(post => {
           return (
             <div key={post.id}>
-              {post.caption}
-              <div>
-                <DeletePost postId={post.id}></DeletePost>
-                <UpdatePost post={post}></UpdatePost>
-              </div>
+              <Link to={`/posts/${post.id}`}>{post.caption}</Link>
             </div>
           );
         })}
@@ -44,10 +40,10 @@ export const PostList = observer(function PostList() {
 });
 
 export const PostListCursor = observer(function PostList() {
-  const take = 1;
+  const take = 5;
   const [cursor, setCursor] = React.useState(undefined);
 
-  const { data: posts, status, query } = useDB<any>(
+  const { data: posts, status } = useDB<any>(
     db.Post.findMany({ take, cursor: { id: cursor } }, { queryKey: 'posts' })
   );
 
@@ -58,15 +54,10 @@ export const PostListCursor = observer(function PostList() {
 
     return (
       <div>
-        <button onClick={query.refetch}>Refetch</button>
         {posts.data.map(post => {
           return (
             <div key={post.id}>
-              {post.caption}
-              <div>
-                <DeletePost postId={post.id}></DeletePost>
-                <UpdatePost post={post}></UpdatePost>
-              </div>
+              <Link to={`/posts/${post.id}`}>{post.caption}</Link>
             </div>
           );
         })}
@@ -76,6 +67,30 @@ export const PostListCursor = observer(function PostList() {
         >
           Load more
         </button>
+      </div>
+    );
+  }
+
+  return null;
+});
+
+export const PostDetail = observer(function PostDetail() {
+  const params = useParams();
+
+  const { data, status } = useDB<any>(
+    db.Post.findOne({ where: { id: parseFloat(params.id) } })
+  );
+
+  if (status === 'loading' && !data) {
+    return <div>loading...</div>;
+  } else if (data) {
+    return (
+      <div>
+        <div>{data.caption}</div>
+        <div>
+          <DeletePost postId={data.id} />
+          <UpdatePost post={data} />
+        </div>
       </div>
     );
   }
@@ -95,12 +110,6 @@ export const CreatePost = observer(function CreatePost() {
       })
     );
   };
-
-  React.useEffect(() => {
-    if (status === 'success') {
-      refetchByQueryKey('posts');
-    }
-  }, [status]);
 
   return (
     <div>
@@ -129,12 +138,6 @@ export const DeletePost = observer(function DeletePost({
     e.preventDefault();
     setQuery(db.Post.delete({ where: { id: postId } }));
   };
-
-  React.useEffect(() => {
-    if (status === 'success') {
-      refetchByQueryKey('posts');
-    }
-  }, [status]);
 
   return (
     <button disabled={status === 'loading'} onClick={handleDeletePost}>
