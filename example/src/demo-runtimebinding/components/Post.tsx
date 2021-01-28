@@ -56,8 +56,6 @@ export const PostListCursor = observer(function PostList() {
   } else if (posts) {
     const nextCursor = posts.pagination.cursor.id;
 
-    console.log('next cursor ', nextCursor);
-
     return (
       <div>
         <button onClick={query.refetch}>Refetch</button>

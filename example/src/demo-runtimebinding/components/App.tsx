@@ -5,7 +5,7 @@ import { db } from '../models';
 import { CreatePost, PostList, PostListCursor } from './Post';
 import { ServerBinding } from '../server-binding';
 
-const connection = new Connection({ bind: new ServerBinding(), db });
+const connection = new Connection({ bind: new RuntimeBinding(), db });
 
 export const App = () => {
   return (
