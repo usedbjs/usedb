@@ -44,7 +44,7 @@ yarn test
 
 ### Docs
 
-Improvements to the documentation are always welcome. You can find them in the on [`react-pluggable.github.io`](https://github.com/usedbjs/usedb-docs) repository. We use [Docusaurus](https://docusaurus.io/) to build our documentation website. The website is published automatically whenever the `master` branch is updated.
+Improvements to the documentation are always welcome. You can find them in the on [`usedbjs.github.io`](https://github.com/usedbjs/usedb-docs) repository. We use [Docusaurus](https://docusaurus.io/) to build our documentation website. The website is published automatically whenever the `master` branch is updated.
 
 ### Examples
 
@@ -78,7 +78,7 @@ For non-trivial changes, please open an issue with a proposal for a new feature 
 
 In general, the contribution workflow looks like this:
 
-- Open a new issue in the [Issue tracker](https://github.com/GeekyAnts/react-pluggable/issues)
+- Open a new issue in the [Issue tracker](https://github.com/usedbjs/usedb/issues)
 - Fork the repo.
 - Create a new feature branch based off the `master` branch.
 - Make sure all tests pass and there are no linting errors.
