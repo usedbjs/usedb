@@ -1,0 +1,13 @@
+<svg id="Group_2" data-name="Group 2" xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 44 44">
+  <path id="Path-4" d="M21.992,43.962C12.908,43.077-.662,30.582.025,22.091S12.719-.751,21.889.031,44.931,13.695,43.951,22,31.068,44.839,21.992,43.962Z" transform="translate(0)" fill="#ff3867"/>
+  <g id="Group" transform="translate(9.696 9.486)">
+    <g id="Group_8" data-name="Group 8" transform="translate(0)">
+      <g id="database_1_" data-name="database (1)">
+        <path id="Shape" d="M0,5C0,1.565,6.357,0,12.263,0S24.526,1.565,24.526,5s-6.357,5-12.263,5S0,8.435,0,5Z" fill="#fff"/>
+        <path id="Path" d="M12.222,20.952C6.336,20.952,0,19.409,0,16.022V1.232a1.222,1.222,0,1,1,2.444,0v14.79c0,.634,3.361,2.465,9.778,2.465S22,16.656,22,16.022V1.232a1.222,1.222,0,1,1,2.444,0v14.79C24.444,19.409,18.108,20.952,12.222,20.952Z" transform="translate(0.082 3.27)" fill="#fff"/>
+        <path id="Path-2" data-name="Path" d="M12.222,6.111C6.336,6.111,0,4.581,0,1.222a1.222,1.222,0,1,1,2.444,0c0,.628,3.361,2.444,9.778,2.444S22,1.85,22,1.222a1.222,1.222,0,0,1,2.444,0C24.444,4.581,18.108,6.111,12.222,6.111Z" transform="translate(0.082 10.254)" fill="#fff"/>
+      </g>
+      <circle id="Oval_Copy_3" data-name="Oval Copy 3" cx="2.444" cy="2.444" r="2.444" transform="translate(12.357 6.298)" fill="#ff3867" stroke="#fff" stroke-miterlimit="10" stroke-width="1.5"/>
+    </g>
+  </g>
+</svg>
