@@ -1,38 +1,39 @@
-export type IFetchPolicy = 'no-cache' | 'cache-and-network';
 export default class QueryData {
   collection: string;
   operation: string;
   payload: any;
   queryKey: string;
-  fetchPolicy: IFetchPolicy = 'cache-and-network';
-  normalizer?: any;
+
   constructor(
     collection: string,
     operation: string,
     payload: any,
-    fetchPolicy?: IFetchPolicy,
-    normalizer?: any
+    queryKey?: any
   ) {
     this.collection = collection;
     this.operation = operation;
     this.payload = payload;
-    this.queryKey = getHash(this);
-    this.fetchPolicy = fetchPolicy || this.fetchPolicy;
-    this.normalizer = normalizer;
+    this.queryKey = queryKey ?? getHash(this);
   }
 }
 
 // Reference from react-query
-const getHash = (val: any) => {
-  return JSON.stringify(val, (_, val) =>
-    isPlainObject(val)
-      ? Object.keys(val)
+export const getHash = (val: any) => {
+  const { cursor, ...rest } = val.payload;
+  const hashValue = {
+    ...val,
+    payload: rest,
+  };
+
+  return JSON.stringify(hashValue, (_, hashValue) =>
+    isPlainObject(hashValue)
+      ? Object.keys(hashValue)
           .sort()
           .reduce((result, key) => {
-            result[key] = val[key];
+            result[key] = hashValue[key];
             return result;
           }, {} as any)
-      : val
+      : hashValue
   );
 };
 

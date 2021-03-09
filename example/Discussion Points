@@ -1,0 +1,12 @@
+Discussion Points
+
+1. Validation layer on input on creation (Can be handled on model level in laravel)
+2. Restriction on where clause. 
+3. Figure out restricting some fields. e.g. password in db.User.find()
+4. Relational queries depth control
+5. Resolvers for non db fields? e.g. isLiked in a Post. Cases where Queries != DB models
+6. Rate limiting
+7. Authentication
+
+
+https://www.apollographql.com/docs/apollo-server/schema/schema/#query-driven-schema-design

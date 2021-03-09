@@ -1,12 +1,10 @@
 import { QueryData } from './query';
 import { Binding } from './binding';
-import { Cache } from './cache';
-import { isNil } from 'lodash';
 import { DBInstance } from './cache/mst-cache';
 
 export class Connection {
   private bind: Binding;
-  cache: Cache;
+  cache: DBInstance;
   constructor({ bind, db }: { bind: Binding; db: DBInstance }) {
     this.bind = bind;
     this.cache = db;
@@ -17,35 +15,15 @@ export class Connection {
   getAllCollections(): Promise<any> {
     return this.bind.getAllCollections();
   }
-  query(query: QueryData, disableCache?: boolean): Promise<any> {
-    if (
-      !disableCache &&
-      query.fetchPolicy === 'cache-and-network' &&
-      this.cache.has(query)
-    ) {
-      let cachedValue = this.cache.get(query);
-      if (!isNil(cachedValue)) {
-        return new Promise((resolve: any, _reject: any) => {
-          resolve(cachedValue);
-          this.bind.perform(query).then(resp => {
-            this.cache.put(query, resp);
-          });
-        });
-      }
-    }
-
+  query(query: QueryData, _disableCache?: boolean): Promise<any> {
     return new Promise((resolve: any, reject: any) => {
       this.bind
         .perform(query)
         .then(resp => {
-          if (query.fetchPolicy === 'cache-and-network') {
-            this.cache.put(query, resp);
-            resolve(this.cache.get(query));
-          } else {
-            resolve(resp);
-          }
+          resolve(resp);
         })
         .catch(error => {
+          console.log('error ', error);
           reject(error);
         });
     });

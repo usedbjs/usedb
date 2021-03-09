@@ -13,7 +13,8 @@
       "build": "tsdx build --tsconfig tsconfig.build.json",
       "test": "tsdx test",
       "lint": "tsdx lint",
-      "prepublish": "npm run build"
+      "prepublish": "npm run build",
+      "pack": "npm run pack"
     },
     "main": "dist/index.js",
     "module": "dist/react.esm.js",
@@ -26,7 +27,6 @@
     "dependencies": {
       "lodash": "^4.17.20",
       "mobx": "^6.0.4",
-      "mobx-react-lite": "^3.1.6",
       "mobx-state-tree": "^5.0.0",
       "mobx-state-tree-normalizr": "^1.0.10",
       "tslib": "^2.0.0"

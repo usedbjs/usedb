@@ -1,28 +1,53 @@
 import { filter, findIndex, isEmpty } from 'lodash';
 import { QueryData, Binding } from '../../src/index';
 
-const artificialDelay = (fn: any) => setTimeout(fn, 1000);
+const artificialDelay = (fn: any) => setTimeout(fn, 500);
 
-const randomPosts = [
-  { id: '1', title: 'post1', author: '2' },
-  { id: '2', title: 'post2' },
-  { id: '3', title: 'post3' },
-  { id: '4', title: 'post4' },
-  { id: '5', title: 'post5' },
-  { id: '6', title: 'post2' },
-  { id: '7', title: 'kwd' },
-  { id: '8', title: '1jdn' },
-  { id: '9', title: 'dkdk' },
-  { id: '10', title: 'djtr' },
-  { id: '11', title: 'fijf' },
-  { id: '12', title: 'djr' },
-  { id: '13', title: 'fmijr' },
-  { id: '14', title: 'fnif' },
-  { id: '15', title: 'fnir' },
-];
+const handleSkipTakePagination = ({
+  skip,
+  take,
+  data,
+}: {
+  skip: number;
+  take: number;
+  data: any[];
+}) => {
+  return {
+    data: data.slice(skip, skip + take),
+    pagination: {
+      total: data.length,
+    },
+  };
+};
+
+const handleCursorPagination = ({
+  cursor,
+  take,
+  data,
+}: {
+  cursor: { id: any };
+  take: number;
+  data: any[];
+}) => {
+  let result = [...data];
+  const index = result.findIndex(r => r.id === cursor.id);
+  result = data.slice(index + 1, index + 1 + take);
+
+  const nextCursor = data[index + take]?.id;
+
+  return {
+    data: result,
+    pagination: {
+      cursor: {
+        id: nextCursor,
+      },
+    },
+  };
+};
 
 export default class RuntimeBinding implements Binding {
-  db: any = { Post: randomPosts };
+  db: any = {};
+
   getAllCollections(): Promise<any> {
     return new Promise(async (resolve, reject) => {
       try {
@@ -54,14 +79,12 @@ export default class RuntimeBinding implements Binding {
       });
     });
   }
-  private processQuery(
-    query: QueryData
-  ): { meta: any; data: any; error?: any } {
+  private processQuery(query: QueryData): any {
     const { collection, operation, payload } = query;
     let returnValue: any;
     switch (operation) {
       case 'create':
-        const data = { id: Math.random().toString(), ...payload.data };
+        const data = { id: Math.random(), ...payload.data };
         this.db[collection].push(data);
         returnValue = data;
         break;
@@ -79,39 +102,54 @@ export default class RuntimeBinding implements Binding {
       case 'findOne':
         if (payload.hasOwnProperty('where')) {
           let val = filter(this.db[collection], payload.where);
-          returnValue = val.length ? val[0] : undefined;
+          returnValue = val.length ? val[0] : {};
         }
         if (payload.hasOwnProperty('select')) {
           let queryResult: any = {};
           payload.select.forEach((selectOption: string) => {
             queryResult[selectOption] = returnValue[selectOption];
           });
-          returnValue = !isEmpty(queryResult) ? queryResult : undefined;
+          returnValue = !isEmpty(queryResult) ? queryResult : {};
         }
         break;
-      case 'findMany':
+      case 'findMany': {
+        let data: any = [];
         if (payload.hasOwnProperty('where')) {
-          returnValue = filter(this.db[collection], payload.where);
-          if (returnValue.length === 0) {
-            throw new Error('404 Not found');
-          }
+          data = filter(this.db[collection], payload.where);
         } else {
-          returnValue = this.db[collection];
+          data = this.db[collection];
         }
 
         if (payload.hasOwnProperty('select')) {
           let queryResults: any = [];
-          returnValue.forEach((_result: any, index: number) => {
+          data.forEach((_result: any, index: number) => {
             queryResults.push({});
             payload.select.forEach((selectOption: string) => {
-              queryResults[index][selectOption] =
-                returnValue[index][selectOption];
+              queryResults[index][selectOption] = data[index][selectOption];
             });
           });
-          returnValue = queryResults;
+          data = queryResults;
+        }
+
+        if (payload.hasOwnProperty('cursor')) {
+          returnValue = handleCursorPagination({
+            cursor: payload.cursor,
+            take: payload.take,
+            data,
+          });
+        } else if (payload.hasOwnProperty('skip')) {
+          returnValue = handleSkipTakePagination({
+            skip: payload.skip,
+            take: payload.take,
+            data,
+          });
+        } else {
+          returnValue = data;
         }
 
         break;
+      }
+
       case 'delete':
         if (payload.hasOwnProperty('where')) {
           let index = findIndex(this.db[collection], payload.where);
@@ -148,12 +186,11 @@ export default class RuntimeBinding implements Binding {
           returnValue = values.length;
         }
         break;
-      case 'fetchAuthor':
-        returnValue = { authorId: '1234', name: 'joe' };
-        break;
       default:
         break;
     }
-    return { meta: {}, data: returnValue };
+
+    console.log('BINDING RESPONSE :: ', returnValue);
+    return returnValue;
   }
 }

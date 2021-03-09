@@ -1,4 +1,4 @@
-import React, { ReactChildren, ReactChild } from 'react';
+import React from 'react';
 import { Connection } from '@usedb/core';
 
 export const UseDBReactContext: any = /*#__PURE__*/ React.createContext(null);
@@ -12,7 +12,7 @@ export function Provider({
   children,
 }: {
   connection: Connection;
-  children: ReactChildren | ReactChild;
+  children: any;
 }) {
   return (
     <UseDBReactContext.Provider value={{ connection }}>
